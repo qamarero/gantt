@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Seedstrial - Gantt Chart</title>
+<title>Project Roadmap</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     background: #0f1117;
     color: #e1e4e8;
     min-height: 100vh;
@@ -44,7 +44,7 @@
     border-radius: 8px;
     color: #e1e4e8;
     font-size: 14px;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     margin-bottom: 16px;
     outline: none;
     transition: border-color 0.2s;
@@ -61,6 +61,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
   .auth-btn:hover { background: #2ea043; }
   .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -89,7 +90,7 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.15s;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     display: flex; align-items: center; gap: 6px;
   }
   .toolbar-btn:hover { background: #30363d; color: #e1e4e8; }
@@ -113,7 +114,7 @@
   /* --- Header --- */
   .header { margin-bottom: 36px; }
   .header h1 {
-    font-size: 28px; font-weight: 700; color: #fff;
+    font-size: 28px; font-weight: 800; color: #fff;
     margin-bottom: 6px; letter-spacing: -0.5px;
   }
   .header p { font-size: 14px; color: #8b949e; }
@@ -136,6 +137,43 @@
   .stat-high .stat-value { color: #ffa657; }
   .stat-medium .stat-value { color: #d2992a; }
   .stat-low .stat-value { color: #8b949e; }
+
+  /* --- Section header --- */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    margin-top: 32px;
+  }
+  .section-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #e1e4e8;
+    letter-spacing: -0.3px;
+  }
+  .section-header .task-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8b949e;
+    background: #21262d;
+    padding: 2px 10px;
+    border-radius: 12px;
+  }
+  .section-toggle {
+    margin-left: auto;
+    padding: 4px 12px;
+    background: none;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #8b949e;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .section-toggle:hover { background: #21262d; color: #e1e4e8; }
 
   /* --- Gantt --- */
   .gantt-container {
@@ -217,7 +255,21 @@
     box-shadow: 0 2px 12px rgba(248,81,73,0.5) !important;
     animation: pulse 2s ease-in-out infinite;
   }
+  .bar-done {
+    background: linear-gradient(135deg, #1a7f37, #2ea043);
+    box-shadow: 0 2px 8px rgba(46,160,67,0.25);
+    opacity: 0.7;
+  }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.75; } }
+
+  /* --- Done section --- */
+  .done-container {
+    background: #161b22; border-radius: 12px;
+    border: 1px solid #21262d; overflow-x: auto;
+  }
+  .done-container .gantt-row { opacity: 0.6; }
+  .done-container .gantt-row:hover { opacity: 1; background: rgba(46,160,67,0.04); }
+  .done-container .task-title { text-decoration: line-through; text-decoration-color: #484f58; }
 
   /* --- Loading --- */
   .loading-state {
@@ -252,6 +304,40 @@
     white-space: pre-wrap; word-wrap: break-word;
   }
   .tooltip-desc:empty { display: none; }
+
+  /* --- Mobile --- */
+  @media (max-width: 768px) {
+    body { padding: 16px; }
+    .header { margin-bottom: 24px; }
+    .header h1 { font-size: 22px; }
+    .header p { font-size: 13px; }
+    .stats-row { gap: 8px; margin-bottom: 20px; }
+    .stat-card { padding: 12px 16px; min-width: 0; flex: 1 1 calc(50% - 4px); }
+    .stat-value { font-size: 20px; }
+    .stat-label { font-size: 10px; }
+    .legend { gap: 16px; margin-bottom: 20px; }
+    .legend-item { font-size: 12px; }
+    .toolbar { gap: 8px; }
+    .task-info { min-width: 200px !important; max-width: 200px !important; width: 200px !important; padding: 10px 12px !important; }
+    .task-title { max-width: 180px; font-size: 12px; }
+    .task-id { font-size: 10px; }
+    .col-priority { display: none; }
+    .task-due { padding: 10px 12px; width: 90px; min-width: 90px; font-size: 11px; }
+    .gantt-header th { padding: 10px 12px; }
+    .tooltip { max-width: calc(100vw - 32px); min-width: 220px; }
+    .section-header { margin-top: 24px; }
+    .section-header h2 { font-size: 14px; }
+  }
+
+  @media (max-width: 480px) {
+    body { padding: 12px; }
+    .header h1 { font-size: 18px; }
+    .stat-card { flex: 1 1 100%; }
+    .task-info { min-width: 160px !important; max-width: 160px !important; width: 160px !important; }
+    .task-title { max-width: 140px; }
+    .col-due { display: none; }
+    .auth-box { padding: 24px; margin: 0 12px; }
+  }
 </style>
 </head>
 <body>
@@ -260,7 +346,7 @@
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
     <h2>Connect to Linear</h2>
-    <p>Enter your Linear API key to fetch issues from the seedstrial project. Your key is stored locally in your browser.</p>
+    <p>Enter your Linear API key to view your project timeline. Your key is stored locally in your browser.</p>
     <input type="password" class="auth-input" id="apiKeyInput" placeholder="lin_api_xxxxxxxxxxxxxxxx" autocomplete="off">
     <button class="auth-btn" id="authBtn" onclick="authenticate()">Connect</button>
     <div class="auth-error" id="authError"></div>
@@ -269,8 +355,8 @@
 
 <!-- Main content -->
 <div class="header">
-  <h1>Seedstrial Project</h1>
-  <p id="subtitle">Loading...</p>
+  <h1 id="teamTitle">Loading...</h1>
+  <p id="subtitle">Connecting to Linear...</p>
 </div>
 
 <div class="toolbar">
@@ -288,6 +374,7 @@
   <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#d47519,#ffa657)"></div> High</div>
   <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#9e6a03,#d2992a)"></div> Medium</div>
   <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#484f58,#8b949e)"></div> Low</div>
+  <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#1a7f37,#2ea043)"></div> Done</div>
   <div class="legend-item"><div class="legend-dot" style="background:rgba(88,166,255,0.3); border: 1px dashed #58a6ff;"></div> Today</div>
 </div>
 
@@ -297,6 +384,14 @@
     <div>Fetching issues from Linear...</div>
   </div>
 </div>
+
+<div class="section-header" id="doneHeader" style="display:none">
+  <h2>Completed</h2>
+  <span class="task-count" id="doneCount">0</span>
+  <button class="section-toggle" id="doneToggle" onclick="toggleDone()">Hide</button>
+</div>
+
+<div class="done-container" id="doneContainer" style="display:none"></div>
 
 <div class="tooltip" id="tooltip">
   <div class="tooltip-title" id="tooltipTitle"></div>
@@ -313,7 +408,9 @@ const DAY_WIDTH = 28;
 
 // ---- State ----
 let apiKey = localStorage.getItem('linear_api_key') || '';
-let cachedTasks = [];
+let cachedActive = [];
+let cachedDone = [];
+let doneVisible = true;
 
 // ---- Auth ----
 function checkAuth() {
@@ -363,21 +460,22 @@ function logout() {
 }
 
 // ---- Linear GraphQL ----
-async function fetchIssues() {
+async function fetchData() {
   const query = `
     query {
       project(id: "${PROJECT_ID}") {
         name
-        issues(first: 100, filter: { completedAt: { null: true } }) {
+        teams(first: 5) { nodes { name } }
+        issues(first: 200) {
           nodes {
             identifier
             title
             description
             dueDate
             priority
+            completedAt
             state { name type }
             createdAt
-            assignee { name }
           }
         }
       }
@@ -393,22 +491,33 @@ async function fetchIssues() {
   const data = await res.json();
   if (data.errors) throw new Error(data.errors[0].message);
 
-  const nodes = data.data.project.issues.nodes;
+  const project = data.data.project;
+  const teamName = project.teams?.nodes?.[0]?.name || project.name;
+  const nodes = project.issues.nodes;
 
-  return nodes
-    .filter(n => n.dueDate)
-    .map(n => ({
-      id: n.identifier,
-      title: n.title,
-      description: n.description || '',
-      due: n.dueDate,
-      priorityVal: n.priority,
-      priority: PRIORITY_MAP[n.priority] || 'None',
-      status: n.state?.name || '',
-      statusType: n.state?.type || '',
-      assignee: n.assignee?.name || 'Unassigned',
-    }))
+  const mapIssue = n => ({
+    id: n.identifier,
+    title: n.title,
+    description: n.description || '',
+    due: n.dueDate,
+    priorityVal: n.priority,
+    priority: PRIORITY_MAP[n.priority] || 'None',
+    status: n.state?.name || '',
+    statusType: n.state?.type || '',
+    completedAt: n.completedAt,
+  });
+
+  const active = nodes
+    .filter(n => n.dueDate && !n.completedAt)
+    .map(mapIssue)
     .sort((a, b) => a.priorityVal - b.priorityVal || new Date(a.due) - new Date(b.due));
+
+  const done = nodes
+    .filter(n => n.completedAt)
+    .map(mapIssue)
+    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+
+  return { teamName, active, done };
 }
 
 // ---- Refresh ----
@@ -417,24 +526,34 @@ async function refreshData() {
   btn.classList.add('loading');
   document.getElementById('ganttContainer').innerHTML =
     '<div class="loading-state"><div class="big-spinner"></div><div>Fetching issues from Linear...</div></div>';
+  document.getElementById('doneHeader').style.display = 'none';
+  document.getElementById('doneContainer').style.display = 'none';
 
   try {
-    cachedTasks = await fetchIssues();
-    renderGantt(cachedTasks);
+    const { teamName, active, done } = await fetchData();
+    cachedActive = active;
+    cachedDone = done;
+
+    document.getElementById('teamTitle').textContent = teamName;
+    document.title = teamName + ' \u2014 Project Roadmap';
+
+    renderGantt(active);
+    renderDone(done);
+
     const now = new Date();
     document.getElementById('lastSynced').textContent =
       'Last synced: ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   } catch (e) {
     document.getElementById('ganttContainer').innerHTML =
-      '<div class="empty-state"><h3>Error fetching data</h3><p>' + e.message + '</p></div>';
+      '<div class="empty-state"><h3>Error fetching data</h3><p>' + escHtml(e.message) + '</p></div>';
   } finally {
     btn.classList.remove('loading');
   }
 }
 
-// ---- Render ----
+// ---- Helpers ----
 function daysBetween(a, b) {
-  return Math.round((b - a) / (86400000));
+  return Math.round((b - a) / 86400000);
 }
 
 function formatDate(dateStr) {
@@ -456,45 +575,10 @@ function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Description lookup (avoids HTML-escaping issues in data attributes)
 var descriptionMap = {};
 
-function renderGantt(tasks) {
-  if (!tasks.length) {
-    document.getElementById('ganttContainer').innerHTML =
-      '<div class="empty-state"><h3>No issues with due dates</h3><p>Add due dates to your Linear issues to see them here.</p></div>';
-    document.getElementById('subtitle').textContent = 'No tasks with due dates';
-    document.getElementById('statsRow').innerHTML = '';
-    return;
-  }
-
-  const today = new Date(); today.setHours(0,0,0,0);
-
-  // Dynamic date range: 2 days before today to 3 days after last due date
-  const allDues = tasks.map(t => new Date(t.due + 'T00:00:00'));
-  const minDate = new Date(Math.min(today, ...allDues));
-  const maxDate = new Date(Math.max(today, ...allDues));
-  const chartStart = new Date(minDate); chartStart.setDate(chartStart.getDate() - 2);
-  const chartEnd = new Date(maxDate); chartEnd.setDate(chartEnd.getDate() + 3);
-  const totalDays = daysBetween(chartStart, chartEnd);
-
-  // Stats
-  const counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
-  tasks.forEach(t => { counts[t.priorityVal] = (counts[t.priorityVal] || 0) + 1; });
-  const spanDays = daysBetween(today, allDues[allDues.length - 1]);
-
-  document.getElementById('subtitle').textContent =
-    tasks.length + ' tasks with due dates \u00B7 ' +
-    formatDate(tasks[0].due) + ' \u2013 ' + formatDate(tasks[tasks.length - 1].due);
-
-  document.getElementById('statsRow').innerHTML =
-    (counts[1] ? '<div class="stat-card stat-urgent"><div class="stat-value">' + counts[1] + '</div><div class="stat-label">Urgent</div></div>' : '') +
-    (counts[2] ? '<div class="stat-card stat-high"><div class="stat-value">' + counts[2] + '</div><div class="stat-label">High</div></div>' : '') +
-    (counts[3] ? '<div class="stat-card stat-medium"><div class="stat-value">' + counts[3] + '</div><div class="stat-label">Medium</div></div>' : '') +
-    (counts[4] ? '<div class="stat-card stat-low"><div class="stat-value">' + counts[4] + '</div><div class="stat-label">Low</div></div>' : '') +
-    '<div class="stat-card"><div class="stat-value">' + spanDays + ' days</div><div class="stat-label">Total Span</div></div>';
-
-  // Calendar header
+// ---- Build calendar helpers ----
+function buildCalendarHeader(chartStart, totalDays, today) {
   var months = {};
   for (var i = 0; i < totalDays; i++) {
     var d = new Date(chartStart); d.setDate(d.getDate() + i);
@@ -511,13 +595,62 @@ function renderGantt(tasks) {
     var cls = 'day-cell' + (wk ? ' weekend' : '') + (isT ? ' today' : '');
     daysHtml += '<div class="' + cls + '" style="width:' + DAY_WIDTH + 'px">' + d.getDate() + '</div>';
   }
-  var calHeader = '<div class="month-row">' + monthsHtml + '</div><div class="days-row">' + daysHtml + '</div>';
+  return '<div class="month-row">' + monthsHtml + '</div><div class="days-row">' + daysHtml + '</div>';
+}
 
-  // Table
+function buildBgDays(chartStart, totalDays, today) {
+  var bgDays = '';
+  for (var i = 0; i < totalDays; i++) {
+    var d = new Date(chartStart); d.setDate(d.getDate() + i);
+    var isT = d.getTime() === today.getTime();
+    var wk = isWeekend(d);
+    bgDays += '<div class="bar-day' + (wk ? ' weekend' : '') + (isT ? ' today' : '') + '" style="width:' + DAY_WIDTH + 'px"></div>';
+  }
+  return bgDays;
+}
+
+// ---- Render Active Gantt ----
+function renderGantt(tasks) {
+  if (!tasks.length) {
+    document.getElementById('ganttContainer').innerHTML =
+      '<div class="empty-state"><h3>No active issues with due dates</h3><p>Add due dates to your Linear issues to see them here.</p></div>';
+    document.getElementById('subtitle').textContent = 'No active tasks with due dates';
+    document.getElementById('statsRow').innerHTML = '';
+    return;
+  }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const allDues = tasks.map(t => new Date(t.due + 'T00:00:00'));
+  const minDate = new Date(Math.min(today, ...allDues));
+  const maxDate = new Date(Math.max(today, ...allDues));
+  const chartStart = new Date(minDate); chartStart.setDate(chartStart.getDate() - 2);
+  const chartEnd = new Date(maxDate); chartEnd.setDate(chartEnd.getDate() + 3);
+  const totalDays = daysBetween(chartStart, chartEnd);
+
+  // Stats
+  const counts = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  tasks.forEach(t => { counts[t.priorityVal] = (counts[t.priorityVal] || 0) + 1; });
+  const spanDays = daysBetween(today, allDues[allDues.length - 1]);
+
+  document.getElementById('subtitle').textContent =
+    tasks.length + ' active tasks \u00B7 ' +
+    formatDate(tasks[0].due) + ' \u2013 ' + formatDate(tasks[tasks.length - 1].due);
+
+  document.getElementById('statsRow').innerHTML =
+    (counts[1] ? '<div class="stat-card stat-urgent"><div class="stat-value">' + counts[1] + '</div><div class="stat-label">Urgent</div></div>' : '') +
+    (counts[2] ? '<div class="stat-card stat-high"><div class="stat-value">' + counts[2] + '</div><div class="stat-label">High</div></div>' : '') +
+    (counts[3] ? '<div class="stat-card stat-medium"><div class="stat-value">' + counts[3] + '</div><div class="stat-label">Medium</div></div>' : '') +
+    (counts[4] ? '<div class="stat-card stat-low"><div class="stat-value">' + counts[4] + '</div><div class="stat-label">Low</div></div>' : '') +
+    '<div class="stat-card"><div class="stat-value">' + spanDays + ' days</div><div class="stat-label">Total Span</div></div>';
+
+  var calHeader = buildCalendarHeader(chartStart, totalDays, today);
+  var bgDays = buildBgDays(chartStart, totalDays, today);
+
   var html = '<table class="gantt-table"><thead><tr class="gantt-header">' +
     '<th style="width:320px;min-width:320px">Task</th>' +
-    '<th style="width:100px;min-width:100px">Priority</th>' +
-    '<th style="width:110px;min-width:110px">Due Date</th>' +
+    '<th class="col-priority" style="width:100px;min-width:100px">Priority</th>' +
+    '<th class="col-due" style="width:110px;min-width:110px">Due Date</th>' +
     '<th class="calendar-header">' + calHeader + '</th>' +
     '</tr></thead><tbody>';
 
@@ -530,7 +663,6 @@ function renderGantt(tasks) {
     var overdue = daysLeft < 0;
     var idColor = pCls === 'urgent' ? '#f85149' : pCls === 'high' ? '#ffa657' : pCls === 'medium' ? '#d2992a' : '#8b949e';
 
-    // Bar
     var barStartDay = daysBetween(chartStart, today);
     var barEndDay = daysBetween(chartStart, dueDate);
     var barLeft, barWidth;
@@ -542,14 +674,6 @@ function renderGantt(tasks) {
       barWidth = Math.max((barEndDay - barStartDay) * DAY_WIDTH, DAY_WIDTH);
     }
 
-    var bgDays = '';
-    for (var i = 0; i < totalDays; i++) {
-      var d = new Date(chartStart); d.setDate(d.getDate() + i);
-      var isT2 = d.getTime() === today.getTime();
-      var wk2 = isWeekend(d);
-      bgDays += '<div class="bar-day' + (wk2 ? ' weekend' : '') + (isT2 ? ' today' : '') + '" style="width:' + DAY_WIDTH + 'px"></div>';
-    }
-
     var barLabel = overdue ? Math.abs(daysLeft) + 'd overdue' : daysLeft + 'd';
     var barClass = overdue ? 'bar-overdue' : 'bar-' + pCls;
 
@@ -557,10 +681,10 @@ function renderGantt(tasks) {
       '<td class="task-info">' +
         '<div class="task-id" style="color:' + idColor + '">' + escHtml(task.id) + '</div>' +
         '<div class="task-title">' + escHtml(task.title) + '</div>' +
-        '<div class="task-status">' + escHtml(task.status) + ' &middot; ' + escHtml(task.assignee) + '</div>' +
+        '<div class="task-status">' + escHtml(task.status) + '</div>' +
       '</td>' +
-      '<td class="task-priority"><span class="priority-badge priority-' + pCls + '">' + task.priority + '</span></td>' +
-      '<td class="task-due">' + formatDate(task.due) +
+      '<td class="task-priority col-priority"><span class="priority-badge priority-' + pCls + '">' + task.priority + '</span></td>' +
+      '<td class="task-due col-due">' + formatDate(task.due) +
         '<br><span style="font-size:10px;color:' + (overdue ? '#f85149' : daysLeft <= 14 ? '#ffa657' : '#484f58') + '">' +
         (overdue ? Math.abs(daysLeft) + 'd overdue' : daysLeft + ' days left') + '</span>' +
       '</td>' +
@@ -575,7 +699,6 @@ function renderGantt(tasks) {
             ' data-priority="' + task.priority + '"' +
             ' data-days="' + daysLeft + '"' +
             ' data-status="' + escHtml(task.status) + '"' +
-            ' data-assignee="' + escHtml(task.assignee) + '"' +
             ' onmouseenter="showTooltip(event, this)"' +
             ' onmouseleave="hideTooltip()">' +
             barLabel +
@@ -589,11 +712,133 @@ function renderGantt(tasks) {
   document.getElementById('ganttContainer').innerHTML = html;
 }
 
+// ---- Render Done Tasks ----
+function renderDone(tasks) {
+  var header = document.getElementById('doneHeader');
+  var container = document.getElementById('doneContainer');
+
+  if (!tasks.length) {
+    header.style.display = 'none';
+    container.style.display = 'none';
+    return;
+  }
+
+  header.style.display = 'flex';
+  container.style.display = doneVisible ? 'block' : 'none';
+  document.getElementById('doneCount').textContent = tasks.length;
+  document.getElementById('doneToggle').textContent = doneVisible ? 'Hide' : 'Show';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tasksWithDue = tasks.filter(t => t.due);
+
+  if (!tasksWithDue.length) {
+    // Simple list if no tasks have due dates
+    var html = '<table class="gantt-table"><thead><tr class="gantt-header">' +
+      '<th style="width:320px;min-width:320px">Task</th>' +
+      '<th class="col-priority" style="width:100px;min-width:100px">Priority</th>' +
+      '<th class="col-due" style="width:110px;min-width:110px">Status</th>' +
+      '</tr></thead><tbody>';
+
+    tasks.forEach(function(task) {
+      descriptionMap[task.id] = task.description;
+      var pCls = priorityClass(task.priorityVal);
+      html += '<tr class="gantt-row">' +
+        '<td class="task-info">' +
+          '<div class="task-id" style="color:#2ea043">\u2713 ' + escHtml(task.id) + '</div>' +
+          '<div class="task-title">' + escHtml(task.title) + '</div>' +
+          '<div class="task-status">' + escHtml(task.status) + '</div>' +
+        '</td>' +
+        '<td class="task-priority col-priority"><span class="priority-badge priority-' + pCls + '">' + task.priority + '</span></td>' +
+        '<td class="task-due col-due">' + escHtml(task.status) + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    return;
+  }
+
+  // Full Gantt for done tasks with due dates
+  const allDues = tasksWithDue.map(t => new Date(t.due + 'T00:00:00'));
+  const minDate = new Date(Math.min(today, ...allDues));
+  const maxDate = new Date(Math.max(today, ...allDues));
+  const chartStart = new Date(minDate); chartStart.setDate(chartStart.getDate() - 2);
+  const chartEnd = new Date(maxDate); chartEnd.setDate(chartEnd.getDate() + 3);
+  const totalDays = daysBetween(chartStart, chartEnd);
+
+  var calHeader = buildCalendarHeader(chartStart, totalDays, today);
+  var bgDays = buildBgDays(chartStart, totalDays, today);
+
+  var html = '<table class="gantt-table"><thead><tr class="gantt-header">' +
+    '<th style="width:320px;min-width:320px">Task</th>' +
+    '<th class="col-priority" style="width:100px;min-width:100px">Priority</th>' +
+    '<th class="col-due" style="width:110px;min-width:110px">Due Date</th>' +
+    '<th class="calendar-header">' + calHeader + '</th>' +
+    '</tr></thead><tbody>';
+
+  tasks.forEach(function(task) {
+    descriptionMap[task.id] = task.description;
+    var pCls = priorityClass(task.priorityVal);
+
+    if (!task.due) {
+      html += '<tr class="gantt-row">' +
+        '<td class="task-info">' +
+          '<div class="task-id" style="color:#2ea043">\u2713 ' + escHtml(task.id) + '</div>' +
+          '<div class="task-title">' + escHtml(task.title) + '</div>' +
+          '<div class="task-status">' + escHtml(task.status) + '</div>' +
+        '</td>' +
+        '<td class="task-priority col-priority"><span class="priority-badge priority-' + pCls + '">' + task.priority + '</span></td>' +
+        '<td class="task-due col-due">\u2014</td>' +
+        '<td class="chart-cell"><div class="chart-area" style="width:' + (totalDays * DAY_WIDTH) + 'px"></div></td>' +
+      '</tr>';
+      return;
+    }
+
+    var dueDate = new Date(task.due + 'T00:00:00');
+    var barEndDay = daysBetween(chartStart, dueDate);
+    var barWidth = Math.max(DAY_WIDTH * 2, DAY_WIDTH);
+    var barLeft = Math.max(0, (barEndDay - 1) * DAY_WIDTH);
+
+    html += '<tr class="gantt-row">' +
+      '<td class="task-info">' +
+        '<div class="task-id" style="color:#2ea043">\u2713 ' + escHtml(task.id) + '</div>' +
+        '<div class="task-title">' + escHtml(task.title) + '</div>' +
+        '<div class="task-status">' + escHtml(task.status) + '</div>' +
+      '</td>' +
+      '<td class="task-priority col-priority"><span class="priority-badge priority-' + pCls + '">' + task.priority + '</span></td>' +
+      '<td class="task-due col-due">' + formatDate(task.due) + '</td>' +
+      '<td class="chart-cell">' +
+        '<div class="chart-area" style="width:' + (totalDays * DAY_WIDTH) + 'px">' +
+          '<div class="bar-track">' + bgDays + '</div>' +
+          '<div class="gantt-bar bar-done"' +
+            ' style="left:' + barLeft + 'px; width:' + barWidth + 'px"' +
+            ' data-task="' + escHtml(task.id) + '"' +
+            ' data-title="' + escHtml(task.title) + '"' +
+            ' data-due="' + formatDate(task.due) + '"' +
+            ' data-priority="' + task.priority + '"' +
+            ' data-days="0"' +
+            ' data-status="' + escHtml(task.status) + '"' +
+            ' data-done="true"' +
+            ' onmouseenter="showTooltip(event, this)"' +
+            ' onmouseleave="hideTooltip()">\u2713</div>' +
+        '</div>' +
+      '</td>' +
+    '</tr>';
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function toggleDone() {
+  doneVisible = !doneVisible;
+  document.getElementById('doneContainer').style.display = doneVisible ? 'block' : 'none';
+  document.getElementById('doneToggle').textContent = doneVisible ? 'Hide' : 'Show';
+}
+
 // ---- Tooltip ----
 var tooltip = document.getElementById('tooltip');
 
 function stripMarkdown(md) {
-  // Lightweight markdown-to-text: strip bold, links, headers, bullets
   return md
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .replace(/\*(.+?)\*/g, '$1')
@@ -610,30 +855,36 @@ function positionTooltip(x, y) {
   var vh = window.innerHeight;
   var left = x + 16;
   var top = y - 10;
-  // Flip left if overflowing right
   if (left + rect.width > vw - 12) left = x - rect.width - 16;
-  // Push up if overflowing bottom
   if (top + rect.height > vh - 12) top = vh - rect.height - 12;
   if (top < 12) top = 12;
+  if (left < 12) left = 12;
   tooltip.style.left = left + 'px';
   tooltip.style.top = top + 'px';
 }
 
 function showTooltip(e, el) {
   var days = parseInt(el.dataset.days);
-  var overdue = days < 0;
+  var isDone = el.dataset.done === 'true';
   var taskId = el.dataset.task;
   var desc = descriptionMap[taskId] || '';
 
   document.getElementById('tooltipTitle').textContent = taskId + ' \u2014 ' + el.dataset.title;
-  document.getElementById('tooltipMeta').innerHTML =
-    'Priority: <strong>' + el.dataset.priority + '</strong> &middot; ' +
-    'Due: <strong>' + el.dataset.due + '</strong> &middot; ' +
-    'Status: <strong>' + el.dataset.status + '</strong><br>' +
-    'Assignee: <strong>' + el.dataset.assignee + '</strong> &middot; ' +
-    (overdue
+
+  var metaHtml = 'Priority: <strong>' + escHtml(el.dataset.priority) + '</strong> \u00B7 ' +
+    'Due: <strong>' + escHtml(el.dataset.due) + '</strong> \u00B7 ' +
+    'Status: <strong>' + escHtml(el.dataset.status) + '</strong>';
+
+  if (isDone) {
+    metaHtml += '<br><span style="color:#2ea043">\u2713 Completed</span>';
+  } else {
+    var overdue = days < 0;
+    metaHtml += '<br>' + (overdue
       ? '<span style="color:#f85149">Overdue by ' + Math.abs(days) + ' days</span>'
       : 'Days remaining: <strong>' + days + '</strong>');
+  }
+
+  document.getElementById('tooltipMeta').innerHTML = metaHtml;
   document.getElementById('tooltipDesc').textContent = desc ? stripMarkdown(desc) : '';
   tooltip.classList.add('visible');
   positionTooltip(e.clientX, e.clientY);
@@ -646,6 +897,18 @@ document.addEventListener('mousemove', function(e) {
     positionTooltip(e.clientX, e.clientY);
   }
 });
+
+// Touch support for tooltips on mobile
+document.addEventListener('touchstart', function(e) {
+  var bar = e.target.closest('.gantt-bar');
+  if (bar) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    showTooltip({ clientX: touch.clientX, clientY: touch.clientY }, bar);
+  } else {
+    hideTooltip();
+  }
+}, { passive: false });
 
 // ---- Keyboard shortcut ----
 document.addEventListener('keydown', function(e) {
