@@ -201,8 +201,9 @@
   }
   .day-cell.weekend { background: rgba(255,255,255,0.02); color: #30363d; }
   .day-cell.today { color: #58a6ff; font-weight: 700; background: rgba(88,166,255,0.06); }
-  .gantt-row { transition: background 0.15s; }
+  .gantt-row { transition: background 0.15s; cursor: pointer; }
   .gantt-row:hover { background: rgba(88,166,255,0.04); }
+  .gantt-row.selected { background: rgba(88,166,255,0.08); }
   .gantt-row td { border-bottom: 1px solid #21262d; vertical-align: middle; }
   .task-info { padding: 14px 16px; min-width: 320px; max-width: 320px; width: 320px; }
   .task-id { font-size: 11px; font-weight: 600; margin-bottom: 3px; letter-spacing: 0.3px; }
@@ -287,23 +288,80 @@
   }
   .empty-state h3 { font-size: 16px; color: #8b949e; margin-bottom: 8px; }
 
-  /* --- Tooltip --- */
-  .tooltip {
-    display: none; position: fixed; background: #1c2129;
-    border: 1px solid #30363d; border-radius: 10px; padding: 16px 20px;
-    z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    pointer-events: none;
-    width: max-content; max-width: 520px; min-width: 280px;
+  /* --- Detail Panel --- */
+  .panel-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 150;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
   }
-  .tooltip.visible { display: block; }
-  .tooltip-title { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 10px; }
-  .tooltip-meta { font-size: 12px; color: #8b949e; line-height: 1.7; margin-bottom: 10px; }
-  .tooltip-desc {
-    font-size: 12px; color: #c9d1d9; line-height: 1.6;
-    border-top: 1px solid #21262d; padding-top: 10px;
+  .panel-backdrop.open { opacity: 1; visibility: visible; }
+  .detail-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 440px; max-width: 100%;
+    background: #161b22;
+    border-left: 1px solid #30363d;
+    z-index: 160;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-backdrop.open .detail-panel { transform: translateX(0); }
+  .panel-accent { height: 3px; flex-shrink: 0; }
+  .panel-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 20px 24px 0; flex-shrink: 0;
+  }
+  .panel-id {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.3px;
+    padding: 3px 10px; border-radius: 6px;
+  }
+  .panel-close {
+    margin-left: auto;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: 1px solid #30363d; border-radius: 8px;
+    color: #8b949e; cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .panel-close:hover { background: #21262d; color: #e1e4e8; }
+  .panel-body {
+    flex: 1; overflow-y: auto; padding: 20px 24px 32px;
+    scrollbar-width: thin; scrollbar-color: #30363d transparent;
+  }
+  .panel-title {
+    font-size: 18px; font-weight: 700; color: #fff;
+    line-height: 1.4; margin-bottom: 20px;
+  }
+  .panel-meta-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; margin-bottom: 24px;
+  }
+  .panel-meta-item {
+    background: #1c2129; border: 1px solid #21262d;
+    border-radius: 8px; padding: 12px 14px;
+  }
+  .panel-meta-label {
+    font-size: 10px; font-weight: 600; color: #484f58;
+    text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+  }
+  .panel-meta-value { font-size: 14px; font-weight: 600; color: #e1e4e8; }
+  .panel-desc-header {
+    font-size: 11px; font-weight: 600; color: #484f58;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 12px; padding-top: 20px;
+    border-top: 1px solid #21262d;
+  }
+  .panel-desc {
+    font-size: 13px; color: #c9d1d9; line-height: 1.7;
     white-space: pre-wrap; word-wrap: break-word;
   }
-  .tooltip-desc:empty { display: none; }
+  .panel-desc:empty ~ .panel-desc-header,
+  .panel-empty-desc { display: none; }
+  .panel-drag-hint { display: none; }
 
   /* --- Mobile --- */
   @media (max-width: 768px) {
@@ -324,7 +382,19 @@
     .col-priority { display: none; }
     .task-due { padding: 10px 12px; width: 90px; min-width: 90px; font-size: 11px; }
     .gantt-header th { padding: 10px 12px; }
-    .tooltip { max-width: calc(100vw - 32px); min-width: 220px; }
+    .detail-panel {
+      top: auto; right: 0; bottom: 0; left: 0;
+      width: 100%; max-height: 75vh;
+      border-left: none; border-top: 1px solid #30363d;
+      border-radius: 16px 16px 0 0;
+      transform: translateY(100%);
+    }
+    .panel-backdrop.open .detail-panel { transform: translateY(0); }
+    .panel-drag-hint {
+      display: block;
+      width: 36px; height: 4px; border-radius: 2px;
+      background: #484f58; margin: 10px auto 0; flex-shrink: 0;
+    }
     .section-header { margin-top: 24px; }
     .section-header h2 { font-size: 14px; }
   }
@@ -393,10 +463,21 @@
 
 <div class="done-container" id="doneContainer" style="display:none"></div>
 
-<div class="tooltip" id="tooltip">
-  <div class="tooltip-title" id="tooltipTitle"></div>
-  <div class="tooltip-meta" id="tooltipMeta"></div>
-  <div class="tooltip-desc" id="tooltipDesc"></div>
+<div class="panel-backdrop" id="panelBackdrop">
+  <div class="detail-panel" id="detailPanel">
+    <div class="panel-drag-hint"></div>
+    <div class="panel-accent" id="panelAccent"></div>
+    <div class="panel-header">
+      <div class="panel-id" id="panelId"></div>
+      <button class="panel-close" id="panelClose"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg></button>
+    </div>
+    <div class="panel-body">
+      <h3 class="panel-title" id="panelTitle"></h3>
+      <div class="panel-meta-grid" id="panelMeta"></div>
+      <div class="panel-desc-header" id="panelDescHeader">Description</div>
+      <div class="panel-desc" id="panelDesc"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -534,7 +615,7 @@ async function refreshData() {
     cachedActive = active;
     cachedDone = done;
 
-    document.getElementById('teamTitle').textContent = teamName;
+    document.getElementById('teamTitle').textContent = teamName + ' Roadmap';
     document.title = teamName + ' \u2014 Project Roadmap';
 
     renderGantt(active);
@@ -575,7 +656,7 @@ function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-var descriptionMap = {};
+var taskDataMap = {};
 
 // ---- Build calendar helpers ----
 function buildCalendarHeader(chartStart, totalDays, today) {
@@ -654,9 +735,9 @@ function renderGantt(tasks) {
     '<th class="calendar-header">' + calHeader + '</th>' +
     '</tr></thead><tbody>';
 
-  descriptionMap = {};
+  taskDataMap = {};
   tasks.forEach(function(task) {
-    descriptionMap[task.id] = task.description;
+    taskDataMap[task.id] = task;
     var pCls = priorityClass(task.priorityVal);
     var dueDate = new Date(task.due + 'T00:00:00');
     var daysLeft = daysBetween(today, dueDate);
@@ -677,7 +758,7 @@ function renderGantt(tasks) {
     var barLabel = overdue ? Math.abs(daysLeft) + 'd overdue' : daysLeft + 'd';
     var barClass = overdue ? 'bar-overdue' : 'bar-' + pCls;
 
-    html += '<tr class="gantt-row">' +
+    html += '<tr class="gantt-row" data-task-id="' + escHtml(task.id) + '">' +
       '<td class="task-info">' +
         '<div class="task-id" style="color:' + idColor + '">' + escHtml(task.id) + '</div>' +
         '<div class="task-title">' + escHtml(task.title) + '</div>' +
@@ -692,15 +773,7 @@ function renderGantt(tasks) {
         '<div class="chart-area" style="width:' + (totalDays * DAY_WIDTH) + 'px">' +
           '<div class="bar-track">' + bgDays + '</div>' +
           '<div class="gantt-bar ' + barClass + '"' +
-            ' style="left:' + barLeft + 'px; width:' + barWidth + 'px"' +
-            ' data-task="' + escHtml(task.id) + '"' +
-            ' data-title="' + escHtml(task.title) + '"' +
-            ' data-due="' + formatDate(task.due) + '"' +
-            ' data-priority="' + task.priority + '"' +
-            ' data-days="' + daysLeft + '"' +
-            ' data-status="' + escHtml(task.status) + '"' +
-            ' onmouseenter="showTooltip(event, this)"' +
-            ' onmouseleave="hideTooltip()">' +
+            ' style="left:' + barLeft + 'px; width:' + barWidth + 'px">' +
             barLabel +
           '</div>' +
         '</div>' +
@@ -740,9 +813,9 @@ function renderDone(tasks) {
       '</tr></thead><tbody>';
 
     tasks.forEach(function(task) {
-      descriptionMap[task.id] = task.description;
+      taskDataMap[task.id] = task;
       var pCls = priorityClass(task.priorityVal);
-      html += '<tr class="gantt-row">' +
+      html += '<tr class="gantt-row" data-task-id="' + escHtml(task.id) + '">' +
         '<td class="task-info">' +
           '<div class="task-id" style="color:#2ea043">\u2713 ' + escHtml(task.id) + '</div>' +
           '<div class="task-title">' + escHtml(task.title) + '</div>' +
@@ -776,11 +849,11 @@ function renderDone(tasks) {
     '</tr></thead><tbody>';
 
   tasks.forEach(function(task) {
-    descriptionMap[task.id] = task.description;
+    taskDataMap[task.id] = task;
     var pCls = priorityClass(task.priorityVal);
 
     if (!task.due) {
-      html += '<tr class="gantt-row">' +
+      html += '<tr class="gantt-row" data-task-id="' + escHtml(task.id) + '">' +
         '<td class="task-info">' +
           '<div class="task-id" style="color:#2ea043">\u2713 ' + escHtml(task.id) + '</div>' +
           '<div class="task-title">' + escHtml(task.title) + '</div>' +
@@ -798,7 +871,7 @@ function renderDone(tasks) {
     var barWidth = Math.max(DAY_WIDTH * 2, DAY_WIDTH);
     var barLeft = Math.max(0, (barEndDay - 1) * DAY_WIDTH);
 
-    html += '<tr class="gantt-row">' +
+    html += '<tr class="gantt-row" data-task-id="' + escHtml(task.id) + '">' +
       '<td class="task-info">' +
         '<div class="task-id" style="color:#2ea043">\u2713 ' + escHtml(task.id) + '</div>' +
         '<div class="task-title">' + escHtml(task.title) + '</div>' +
@@ -810,16 +883,7 @@ function renderDone(tasks) {
         '<div class="chart-area" style="width:' + (totalDays * DAY_WIDTH) + 'px">' +
           '<div class="bar-track">' + bgDays + '</div>' +
           '<div class="gantt-bar bar-done"' +
-            ' style="left:' + barLeft + 'px; width:' + barWidth + 'px"' +
-            ' data-task="' + escHtml(task.id) + '"' +
-            ' data-title="' + escHtml(task.title) + '"' +
-            ' data-due="' + formatDate(task.due) + '"' +
-            ' data-priority="' + task.priority + '"' +
-            ' data-days="0"' +
-            ' data-status="' + escHtml(task.status) + '"' +
-            ' data-done="true"' +
-            ' onmouseenter="showTooltip(event, this)"' +
-            ' onmouseleave="hideTooltip()">\u2713</div>' +
+            ' style="left:' + barLeft + 'px; width:' + barWidth + 'px">\u2713</div>' +
         '</div>' +
       '</td>' +
     '</tr>';
@@ -835,8 +899,17 @@ function toggleDone() {
   document.getElementById('doneToggle').textContent = doneVisible ? 'Hide' : 'Show';
 }
 
-// ---- Tooltip ----
-var tooltip = document.getElementById('tooltip');
+// ---- Detail Panel ----
+var backdrop = document.getElementById('panelBackdrop');
+var selectedRowEl = null;
+
+var PRIORITY_COLORS = {
+  'Urgent': { bg: 'rgba(248,81,73,0.15)', color: '#f85149', border: 'rgba(248,81,73,0.25)', accent: '#f85149' },
+  'High': { bg: 'rgba(255,166,87,0.15)', color: '#ffa657', border: 'rgba(255,166,87,0.25)', accent: '#ffa657' },
+  'Medium': { bg: 'rgba(210,153,34,0.15)', color: '#d2992a', border: 'rgba(210,153,34,0.25)', accent: '#d2992a' },
+  'Low': { bg: 'rgba(139,148,158,0.15)', color: '#8b949e', border: 'rgba(139,148,158,0.25)', accent: '#8b949e' },
+  'None': { bg: 'rgba(72,79,88,0.15)', color: '#484f58', border: 'rgba(72,79,88,0.25)', accent: '#484f58' },
+};
 
 function stripMarkdown(md) {
   return md
@@ -849,69 +922,105 @@ function stripMarkdown(md) {
     .trim();
 }
 
-function positionTooltip(x, y) {
-  var rect = tooltip.getBoundingClientRect();
-  var vw = window.innerWidth;
-  var vh = window.innerHeight;
-  var left = x + 16;
-  var top = y - 10;
-  if (left + rect.width > vw - 12) left = x - rect.width - 16;
-  if (top + rect.height > vh - 12) top = vh - rect.height - 12;
-  if (top < 12) top = 12;
-  if (left < 12) left = 12;
-  tooltip.style.left = left + 'px';
-  tooltip.style.top = top + 'px';
-}
+function openPanel(taskId) {
+  var task = taskDataMap[taskId];
+  if (!task) return;
 
-function showTooltip(e, el) {
-  var days = parseInt(el.dataset.days);
-  var isDone = el.dataset.done === 'true';
-  var taskId = el.dataset.task;
-  var desc = descriptionMap[taskId] || '';
+  var pc = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS['None'];
+  var today = new Date(); today.setHours(0,0,0,0);
+  var isDone = !!task.completedAt;
 
-  document.getElementById('tooltipTitle').textContent = taskId + ' \u2014 ' + el.dataset.title;
+  // Accent bar
+  document.getElementById('panelAccent').style.background =
+    isDone ? 'linear-gradient(90deg, #1a7f37, #2ea043)' : 'linear-gradient(90deg, ' + pc.accent + ', ' + pc.accent + '44)';
 
-  var metaHtml = 'Priority: <strong>' + escHtml(el.dataset.priority) + '</strong> \u00B7 ' +
-    'Due: <strong>' + escHtml(el.dataset.due) + '</strong> \u00B7 ' +
-    'Status: <strong>' + escHtml(el.dataset.status) + '</strong>';
+  // ID badge
+  var idEl = document.getElementById('panelId');
+  idEl.textContent = task.id;
+  idEl.style.background = isDone ? 'rgba(46,160,67,0.15)' : pc.bg;
+  idEl.style.color = isDone ? '#2ea043' : pc.color;
+  idEl.style.border = '1px solid ' + (isDone ? 'rgba(46,160,67,0.25)' : pc.border);
 
+  // Title
+  document.getElementById('panelTitle').textContent = task.title;
+
+  // Meta grid
+  var daysLeft = task.due ? daysBetween(today, new Date(task.due + 'T00:00:00')) : null;
+  var overdue = daysLeft !== null && daysLeft < 0;
+
+  var timeValue = '';
+  var timeColor = '#e1e4e8';
   if (isDone) {
-    metaHtml += '<br><span style="color:#2ea043">\u2713 Completed</span>';
+    timeValue = '\u2713 Completed';
+    timeColor = '#2ea043';
+  } else if (daysLeft !== null) {
+    if (overdue) {
+      timeValue = Math.abs(daysLeft) + 'd overdue';
+      timeColor = '#f85149';
+    } else {
+      timeValue = daysLeft + ' days left';
+      timeColor = daysLeft <= 7 ? '#ffa657' : '#e1e4e8';
+    }
   } else {
-    var overdue = days < 0;
-    metaHtml += '<br>' + (overdue
-      ? '<span style="color:#f85149">Overdue by ' + Math.abs(days) + ' days</span>'
-      : 'Days remaining: <strong>' + days + '</strong>');
+    timeValue = 'No due date';
+    timeColor = '#484f58';
   }
 
-  document.getElementById('tooltipMeta').innerHTML = metaHtml;
-  document.getElementById('tooltipDesc').textContent = desc ? stripMarkdown(desc) : '';
-  tooltip.classList.add('visible');
-  positionTooltip(e.clientX, e.clientY);
+  var metaHtml =
+    '<div class="panel-meta-item">' +
+      '<div class="panel-meta-label">Priority</div>' +
+      '<div class="panel-meta-value" style="color:' + pc.color + '">' + escHtml(task.priority) + '</div>' +
+    '</div>' +
+    '<div class="panel-meta-item">' +
+      '<div class="panel-meta-label">Status</div>' +
+      '<div class="panel-meta-value">' + escHtml(task.status) + '</div>' +
+    '</div>' +
+    '<div class="panel-meta-item">' +
+      '<div class="panel-meta-label">Due Date</div>' +
+      '<div class="panel-meta-value">' + (task.due ? formatDate(task.due) : '\u2014') + '</div>' +
+    '</div>' +
+    '<div class="panel-meta-item">' +
+      '<div class="panel-meta-label">Time</div>' +
+      '<div class="panel-meta-value" style="color:' + timeColor + '">' + timeValue + '</div>' +
+    '</div>';
+
+  document.getElementById('panelMeta').innerHTML = metaHtml;
+
+  // Description
+  var desc = task.description ? stripMarkdown(task.description) : '';
+  document.getElementById('panelDesc').textContent = desc;
+  document.getElementById('panelDescHeader').style.display = desc ? 'block' : 'none';
+
+  // Highlight row
+  if (selectedRowEl) selectedRowEl.classList.remove('selected');
+  selectedRowEl = document.querySelector('.gantt-row[data-task-id="' + CSS.escape(taskId) + '"]');
+  if (selectedRowEl) selectedRowEl.classList.add('selected');
+
+  backdrop.classList.add('open');
 }
 
-function hideTooltip() { tooltip.classList.remove('visible'); }
+function closePanel() {
+  backdrop.classList.remove('open');
+  if (selectedRowEl) { selectedRowEl.classList.remove('selected'); selectedRowEl = null; }
+}
 
-document.addEventListener('mousemove', function(e) {
-  if (tooltip.classList.contains('visible')) {
-    positionTooltip(e.clientX, e.clientY);
-  }
+// Close panel on backdrop click
+backdrop.addEventListener('click', function(e) {
+  if (e.target === backdrop) closePanel();
 });
 
-// Touch support for tooltips on mobile
-document.addEventListener('touchstart', function(e) {
-  var bar = e.target.closest('.gantt-bar');
-  if (bar) {
-    e.preventDefault();
-    var touch = e.touches[0];
-    showTooltip({ clientX: touch.clientX, clientY: touch.clientY }, bar);
-  } else {
-    hideTooltip();
-  }
-}, { passive: false });
+// Close button
+document.getElementById('panelClose').addEventListener('click', closePanel);
 
-// ---- Keyboard shortcut ----
+// Row click delegation
+document.addEventListener('click', function(e) {
+  var row = e.target.closest('.gantt-row[data-task-id]');
+  if (row) openPanel(row.dataset.taskId);
+});
+
+// ---- Keyboard shortcuts ----
 document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { closePanel(); return; }
   if (e.key === 'r' && !e.ctrlKey && !e.metaKey && e.target.tagName !== 'INPUT') {
     refreshData();
   }
