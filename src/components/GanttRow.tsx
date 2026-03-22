@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from 'react';
 import type { Task } from '../types';
 import { hideTooltip, showTooltip } from './Tooltip';
 
@@ -7,6 +8,8 @@ interface Props {
   totalDays: number;
   today: Date;
   dayWidth: number;
+  onReschedule?: (taskUuid: string, newDueDate: string) => Promise<void>;
+  onCycleStatus?: (taskUuid: string) => Promise<void>;
 }
 
 function priorityClass(val: number): string {
@@ -63,7 +66,7 @@ function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
-export default function GanttRow({ task, chartStart, totalDays, today, dayWidth }: Props) {
+export default function GanttRow({ task, chartStart, totalDays, today, dayWidth, onReschedule, onCycleStatus }: Props) {
   const pCls = priorityClass(task.priorityVal);
   const dueDate = new Date(task.due + 'T00:00:00');
   const daysLeft = daysBetween(today, dueDate);
@@ -72,19 +75,22 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth 
   const hasStartDate = !!task.startDate;
   const taskStartDate = hasStartDate ? new Date(task.startDate + 'T00:00:00') : null;
 
+  // Drag state
+  const [dragDelta, setDragDelta] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{ startX: number } | null>(null);
+
   // Bar position
   let barLeft: number;
   let barWidth: number;
   let overdueWidth = 0;
 
   if (hasStartDate && taskStartDate) {
-    // Start date mode: bar from startDate to dueDate
     const startDay = daysBetween(chartStart, taskStartDate);
     const endDay = daysBetween(chartStart, dueDate);
     barLeft = startDay * dayWidth;
     barWidth = Math.max((endDay - startDay) * dayWidth, dayWidth);
     if (overdue) {
-      // Show overdue extension past the due date
       overdueWidth = Math.abs(daysLeft) * dayWidth;
     }
   } else if (overdue) {
@@ -98,13 +104,61 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth 
     barWidth = Math.max((barEndDay - barStartDay) * dayWidth, dayWidth);
   }
 
+  // Apply drag delta to bar width
+  const displayBarWidth = Math.max(barWidth + dragDelta, dayWidth);
+
+  // Calculate new due date from drag delta
+  const dragDays = Math.round(dragDelta / dayWidth);
+  const newDueDate = dragDays !== 0 ? (() => {
+    const d = new Date(dueDate);
+    d.setDate(d.getDate() + dragDays);
+    return d;
+  })() : null;
+
   // Bar label
   let barLabel: string;
-  if (task.totalChildren > 0) {
+  if (isDragging && newDueDate) {
+    barLabel = newDueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } else if (task.totalChildren > 0) {
     barLabel = `${task.completedChildren}/${task.totalChildren}`;
   } else {
     barLabel = overdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d`;
   }
+
+  // Drag handlers
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragRef.current = { startX: e.clientX };
+    setIsDragging(true);
+
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      setDragDelta(ev.clientX - dragRef.current.startX);
+    };
+
+    const onUp = async (ev: MouseEvent) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      setIsDragging(false);
+
+      if (dragRef.current && onReschedule) {
+        const delta = ev.clientX - dragRef.current.startX;
+        const days = Math.round(delta / dayWidth);
+        if (days !== 0) {
+          const nd = new Date(dueDate);
+          nd.setDate(nd.getDate() + days);
+          const dateStr = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}-${String(nd.getDate()).padStart(2, '0')}`;
+          await onReschedule(task.uuid, dateStr);
+        }
+      }
+      dragRef.current = null;
+      setDragDelta(0);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [dayWidth, dueDate, onReschedule, task.uuid]);
 
   // Background day cells
   const bgDays: { isWeekend: boolean; isToday: boolean }[] = [];
@@ -117,7 +171,6 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth 
     });
   }
 
-  // Progress bar width (percentage of main bar)
   const progressWidth = task.totalChildren > 0 ? `${task.progress}%` : undefined;
 
   return (
@@ -125,7 +178,15 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth 
       {/* Task info */}
       <td className="py-3.5 px-4 min-w-[320px] max-w-[320px] w-[320px] border-b border-border-primary align-middle">
         <div className="text-[11px] font-semibold mb-0.5 tracking-wide" style={{ color: idColors[pCls] }}>
-          {task.id}
+          <a
+            href={task.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+            style={{ color: 'inherit' }}
+          >
+            {task.id}
+          </a>
           {(task.blocks.length > 0 || task.blockedBy.length > 0) && (
             <span className="ml-1.5 text-[9px] text-text-muted font-normal">
               {task.blocks.length > 0 && `blocks ${task.blocks.length}`}
@@ -138,7 +199,14 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth 
           {task.title}
         </div>
         <div className="text-[10px] text-text-muted mt-0.5">
-          {task.status} &middot; {task.assignee}
+          <button
+            onClick={() => onCycleStatus?.(task.uuid)}
+            className="hover:text-accent cursor-pointer transition-colors"
+            title="Click to cycle status"
+          >
+            {task.status}
+          </button>
+          {' '}&middot; {task.assignee}
           {task.totalChildren > 0 && (
             <span className="ml-1">
               &middot; {task.completedChildren}/{task.totalChildren} subtasks
@@ -197,16 +265,17 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth 
 
           {/* Main bar */}
           <div
-            className={`absolute h-[26px] rounded-md top-[3px] flex items-center justify-end pr-2 text-[10px] font-semibold text-white/70 z-[2] min-w-[20px] cursor-default transition-[filter,transform] duration-150 hover:brightness-120 hover:scale-y-110 ${overdue && !hasStartDate ? 'animate-pulse-bar' : ''}`}
+            className={`gantt-bar absolute h-[26px] rounded-md top-[3px] flex items-center justify-end pr-2 text-[10px] font-semibold text-white/70 z-[2] min-w-[20px] cursor-pointer transition-[filter,transform] duration-150 hover:brightness-120 hover:scale-y-110 ${overdue && !hasStartDate ? 'bar-overdue animate-pulse-bar' : `bar-${pCls}`} ${isDragging ? '!transition-none !transform-none opacity-80' : ''}`}
             style={{
               left: barLeft,
-              width: barWidth,
+              width: displayBarWidth,
               background: overdue && !hasStartDate ? 'linear-gradient(135deg, #da3633, #f85149)' : barGradients[pCls],
               boxShadow: overdue && !hasStartDate ? '0 2px 12px rgba(248,81,73,0.5)' : barShadows[pCls],
               overflow: 'hidden',
             }}
-            onMouseEnter={(e) => showTooltip(task, e.clientX, e.clientY)}
-            onMouseLeave={hideTooltip}
+            onClick={() => window.open(task.url, '_blank')}
+            onMouseEnter={(e) => !isDragging && showTooltip(task, e.clientX, e.clientY)}
+            onMouseLeave={() => !isDragging && hideTooltip()}
           >
             {/* Progress fill */}
             {progressWidth && (
@@ -216,6 +285,15 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth 
               />
             )}
             <span className="relative z-[1]">{barLabel}</span>
+
+            {/* Drag handle on right edge */}
+            {onReschedule && (
+              <div
+                className="absolute right-0 top-0 bottom-0 w-[6px] cursor-col-resize z-[3] hover:bg-white/20 rounded-r-md"
+                onMouseDown={handleDragStart}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
           </div>
 
           {/* Overdue extension (when task has start date and is overdue) */}

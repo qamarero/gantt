@@ -1,4 +1,4 @@
-import type { Filters, Project } from '../types';
+import type { Filters, GroupBy, Project } from '../types';
 
 interface Props {
   projects: Project[];
@@ -10,6 +10,8 @@ interface Props {
   onFiltersChange: (f: Filters) => void;
   totalCount: number;
   filteredCount: number;
+  groupBy: GroupBy;
+  onGroupByChange: (g: GroupBy) => void;
 }
 
 const PRIORITY_CHIPS = [
@@ -29,9 +31,11 @@ const chipActiveColors: Record<string, string> = {
 };
 
 const selectClass =
-  'py-[7px] pl-3 pr-7 bg-bg-card border border-border-secondary rounded-md text-text-primary text-xs font-medium cursor-pointer outline-none transition-colors hover:border-text-muted focus:border-accent appearance-none bg-no-repeat bg-[right_10px_center] bg-[length:10px_6px]';
+  'py-[7px] pl-3 pr-7 bg-bg-card border border-border-secondary rounded-md text-text-primary text-xs font-medium cursor-pointer outline-none transition-colors hover:border-text-muted focus:border-accent appearance-none bg-no-repeat bg-[right_10px_center] bg-[length:10px_6px] max-w-[180px]';
 
 const selectBgImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238b949e' d='M1 1l4 4 4-4'/%3E%3C/svg%3E")`;
+
+const labelClass = 'text-[11px] text-text-muted uppercase tracking-wider mr-0.5 shrink-0';
 
 export default function FilterBar({
   projects,
@@ -43,6 +47,8 @@ export default function FilterBar({
   onFiltersChange,
   totalCount,
   filteredCount,
+  groupBy,
+  onGroupByChange,
 }: Props) {
   const togglePriority = (val: number) => {
     const next = new Set(filters.priorities);
@@ -55,9 +61,9 @@ export default function FilterBar({
     filters.assignee || filters.status || filters.search || filters.priorities.size < 5;
 
   return (
-    <div className="flex items-center gap-2.5 mb-6 flex-wrap">
+    <div className="flex items-center gap-2.5 mb-6 flex-wrap print:hidden">
       {/* Project */}
-      <span className="text-[11px] text-text-muted uppercase tracking-wider mr-0.5">Project</span>
+      <span className={labelClass}>Project</span>
       <select
         value={selectedProjectId}
         onChange={(e) => onSelectProject(e.target.value)}
@@ -71,10 +77,10 @@ export default function FilterBar({
         ))}
       </select>
 
-      <div className="w-px h-6 bg-border-primary mx-1" />
+      <div className="w-px h-6 bg-border-primary mx-1 hidden sm:block" />
 
       {/* Assignee */}
-      <span className="text-[11px] text-text-muted uppercase tracking-wider mr-0.5">Assignee</span>
+      <span className={`${labelClass} hidden sm:inline`}>Assignee</span>
       <select
         value={filters.assignee}
         onChange={(e) => onFiltersChange({ ...filters, assignee: e.target.value })}
@@ -90,7 +96,7 @@ export default function FilterBar({
       </select>
 
       {/* Status */}
-      <span className="text-[11px] text-text-muted uppercase tracking-wider mr-0.5">Status</span>
+      <span className={`${labelClass} hidden sm:inline`}>Status</span>
       <select
         value={filters.status}
         onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
@@ -105,10 +111,10 @@ export default function FilterBar({
         ))}
       </select>
 
-      <div className="w-px h-6 bg-border-primary mx-1" />
+      <div className="w-px h-6 bg-border-primary mx-1 hidden md:block" />
 
       {/* Priority chips */}
-      <span className="text-[11px] text-text-muted uppercase tracking-wider mr-0.5">Priority</span>
+      <span className={`${labelClass} hidden md:inline`}>Priority</span>
       <div className="flex gap-1.5 flex-wrap items-center">
         {PRIORITY_CHIPS.map((c) => {
           const active = filters.priorities.has(c.val);
@@ -128,10 +134,26 @@ export default function FilterBar({
         })}
       </div>
 
-      <div className="w-px h-6 bg-border-primary mx-1" />
+      <div className="w-px h-6 bg-border-primary mx-1 hidden lg:block" />
+
+      {/* Group by */}
+      <span className={`${labelClass} hidden lg:inline`}>Group</span>
+      <select
+        value={groupBy}
+        onChange={(e) => onGroupByChange(e.target.value as GroupBy)}
+        className={selectClass}
+        style={{ backgroundImage: selectBgImage }}
+      >
+        <option value="none">None</option>
+        <option value="assignee">Assignee</option>
+        <option value="priority">Priority</option>
+        <option value="status">Status</option>
+      </select>
+
+      <div className="w-px h-6 bg-border-primary mx-1 hidden lg:block" />
 
       {/* Search */}
-      <div className="relative flex items-center">
+      <div className="relative flex items-center w-full sm:w-auto">
         <span className="absolute left-2.5 text-text-muted pointer-events-none text-[13px]">
           &#128269;
         </span>
@@ -140,7 +162,7 @@ export default function FilterBar({
           value={filters.search}
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
           placeholder="Search tasks..."
-          className="py-[7px] pl-8 pr-3 bg-bg-card border border-border-secondary rounded-md text-text-primary text-xs font-normal outline-none transition-colors w-[220px] hover:border-text-muted focus:border-accent placeholder:text-text-muted"
+          className="py-[7px] pl-8 pr-3 bg-bg-card border border-border-secondary rounded-md text-text-primary text-xs font-normal outline-none transition-colors w-full sm:w-[200px] hover:border-text-muted focus:border-accent placeholder:text-text-muted"
         />
       </div>
 

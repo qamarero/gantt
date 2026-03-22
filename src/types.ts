@@ -1,5 +1,6 @@
 export interface Task {
-  id: string;
+  id: string;         // display identifier (e.g., "SEED-14")
+  uuid: string;       // Linear UUID for mutations
   title: string;
   description: string;
   due: string;
@@ -9,9 +10,11 @@ export interface Task {
   status: string;
   statusType: string;
   assignee: string;
+  url: string;        // direct Linear URL
+  teamId: string;     // team UUID for workflow states
   blocks: string[];
   blockedBy: string[];
-  progress: number;       // 0-100, based on sub-issue completion
+  progress: number;
   totalChildren: number;
   completedChildren: number;
 }
@@ -26,6 +29,15 @@ export interface Milestone {
   name: string;
   targetDate: string | null;
 }
+
+export interface WorkflowState {
+  id: string;
+  name: string;
+  type: string;  // 'triage' | 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled'
+  position: number;
+}
+
+export type GroupBy = 'none' | 'assignee' | 'priority' | 'status';
 
 export const PRIORITY_MAP: Record<number, string> = {
   0: 'None',

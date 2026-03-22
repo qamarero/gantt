@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchIssues, fetchProjects, testAuth } from '../api/linear';
+import { fetchIssues, fetchProjects, fetchWorkflowStates, updateIssueDueDate, updateIssueState } from '../api/linear';
 import { DEFAULT_DAY_WIDTH, MAX_DAY_WIDTH, MIN_DAY_WIDTH } from '../types';
-import type { Filters, Milestone, Project, Task } from '../types';
+import type { Filters, GroupBy, Milestone, Project, Task, WorkflowState } from '../types';
 
 const DEFAULT_PRIORITIES = new Set([0, 1, 2, 3, 4]);
 
-export function useLinearData() {
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('linear_api_key') || '');
+export function useLinearData(linearToken: string) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState(
     () => localStorage.getItem('linear_selected_project') || '',
@@ -14,10 +13,12 @@ export function useLinearData() {
   const [projectName, setProjectName] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [workflowStates, setWorkflowStates] = useState<WorkflowState[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [lastSynced, setLastSynced] = useState('');
   const [dayWidth, setDayWidth] = useState(DEFAULT_DAY_WIDTH);
+  const [groupBy, setGroupBy] = useState<GroupBy>('none');
   const [filters, setFilters] = useState<Filters>({
     assignee: '',
     status: '',
@@ -25,14 +26,11 @@ export function useLinearData() {
     search: '',
   });
 
-  const isAuthenticated = !!apiKey;
   const initialLoadDone = useRef(false);
 
-  // Derived: unique assignees and statuses from current tasks
   const assignees = useMemo(() => [...new Set(tasks.map((t) => t.assignee))].sort(), [tasks]);
   const statuses = useMemo(() => [...new Set(tasks.map((t) => t.status))].sort(), [tasks]);
 
-  // Filtered tasks
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {
       if (!filters.priorities.has(t.priorityVal)) return false;
@@ -46,41 +44,34 @@ export function useLinearData() {
     });
   }, [tasks, filters]);
 
-  const authenticate = useCallback(async (key: string) => {
-    await testAuth(key);
-    localStorage.setItem('linear_api_key', key);
-    setApiKey(key);
-  }, []);
-
-  const logout = useCallback(() => {
-    setApiKey('');
-    setTasks([]);
-    setProjects([]);
-    setProjectName('');
-    setMilestones([]);
-    localStorage.removeItem('linear_api_key');
-  }, []);
-
   const loadProjects = useCallback(async () => {
-    if (!apiKey) return;
-    const p = await fetchProjects(apiKey);
+    if (!linearToken) return;
+    const p = await fetchProjects(linearToken);
     setProjects(p);
     return p;
-  }, [apiKey]);
+  }, [linearToken]);
 
   const loadIssues = useCallback(
     async (projectId: string) => {
-      if (!apiKey || !projectId) return;
+      if (!linearToken || !projectId) return;
       setLoading(true);
       setError('');
       try {
-        const result = await fetchIssues(apiKey, projectId);
+        const result = await fetchIssues(linearToken, projectId);
         setTasks(result.tasks);
         setProjectName(result.projectName);
         setMilestones(result.milestones);
         setLastSynced(
           new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         );
+        if (result.tasks.length > 0 && result.tasks[0].teamId) {
+          try {
+            const states = await fetchWorkflowStates(linearToken, result.tasks[0].teamId);
+            setWorkflowStates(states);
+          } catch {
+            console.warn('Failed to fetch workflow states');
+          }
+        }
       } catch (e) {
         setError((e as Error).message);
         setTasks([]);
@@ -89,7 +80,7 @@ export function useLinearData() {
         setLoading(false);
       }
     },
-    [apiKey],
+    [linearToken],
   );
 
   const selectProject = useCallback(
@@ -114,9 +105,43 @@ export function useLinearData() {
     setDayWidth((w) => Math.max(w - 7, MIN_DAY_WIDTH));
   }, []);
 
-  // Initial load
+  const reschedule = useCallback(
+    async (taskUuid: string, newDueDate: string) => {
+      if (!linearToken) return;
+      await updateIssueDueDate(linearToken, taskUuid, newDueDate);
+      setTasks((prev) =>
+        prev.map((t) => (t.uuid === taskUuid ? { ...t, due: newDueDate } : t)),
+      );
+    },
+    [linearToken],
+  );
+
+  const cycleStatus = useCallback(
+    async (taskUuid: string) => {
+      if (!linearToken || workflowStates.length === 0) return;
+      const task = tasks.find((t) => t.uuid === taskUuid);
+      if (!task) return;
+
+      const typeOrder = ['unstarted', 'started', 'completed'];
+      const currentTypeIdx = typeOrder.indexOf(task.statusType);
+      const nextType = typeOrder[Math.min(currentTypeIdx + 1, typeOrder.length - 1)];
+
+      const nextState = workflowStates.find((s) => s.type === nextType);
+      if (!nextState || nextState.name === task.status) return;
+
+      await updateIssueState(linearToken, taskUuid, nextState.id);
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.uuid === taskUuid ? { ...t, status: nextState.name, statusType: nextState.type } : t,
+        ),
+      );
+    },
+    [linearToken, workflowStates, tasks],
+  );
+
+  // Initial load when token is available
   useEffect(() => {
-    if (!apiKey || initialLoadDone.current) return;
+    if (!linearToken || initialLoadDone.current) return;
     initialLoadDone.current = true;
 
     (async () => {
@@ -133,29 +158,31 @@ export function useLinearData() {
         setError((e as Error).message);
       }
     })();
-  }, [apiKey, selectedProjectId, loadProjects, loadIssues]);
+  }, [linearToken, selectedProjectId, loadProjects, loadIssues]);
 
   return {
-    isAuthenticated,
     projects,
     selectedProjectId,
     projectName,
     tasks,
     filteredTasks,
     milestones,
+    workflowStates,
     assignees,
     statuses,
     loading,
     error,
     lastSynced,
     dayWidth,
+    groupBy,
     filters,
     setFilters,
-    authenticate,
-    logout,
+    setGroupBy,
     selectProject,
     refresh,
     zoomIn,
     zoomOut,
+    reschedule,
+    cycleStatus,
   };
 }

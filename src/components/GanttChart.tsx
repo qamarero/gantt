@@ -1,4 +1,5 @@
-import type { Milestone, Task } from '../types';
+import { useRef, useState } from 'react';
+import type { GroupBy, Milestone, Task } from '../types';
 import DependencyArrows from './DependencyArrows';
 import GanttRow from './GanttRow';
 
@@ -8,6 +9,9 @@ interface Props {
   loading: boolean;
   error: string;
   dayWidth: number;
+  groupBy: GroupBy;
+  onReschedule?: (taskUuid: string, newDueDate: string) => Promise<void>;
+  onCycleStatus?: (taskUuid: string) => Promise<void>;
 }
 
 function isWeekend(date: Date): boolean {
@@ -19,7 +23,37 @@ function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
-export default function GanttChart({ tasks, milestones, loading, error, dayWidth }: Props) {
+function groupTasks(tasks: Task[], groupBy: GroupBy): { key: string; label: string; tasks: Task[] }[] {
+  if (groupBy === 'none') return [{ key: '__all', label: '', tasks }];
+
+  const map = new Map<string, Task[]>();
+  for (const t of tasks) {
+    let key: string;
+    if (groupBy === 'assignee') key = t.assignee;
+    else if (groupBy === 'priority') key = t.priority;
+    else key = t.status;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(t);
+  }
+
+  return Array.from(map.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, tasks]) => ({ key, label: key, tasks }));
+}
+
+export default function GanttChart({ tasks, milestones, loading, error, dayWidth, groupBy, onReschedule, onCycleStatus }: Props) {
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const ganttRef = useRef<HTMLDivElement>(null);
+
+  const toggleCollapse = (key: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   if (loading) {
     return (
       <div className="bg-bg-card rounded-xl border border-border-primary overflow-x-auto">
@@ -56,7 +90,6 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Collect all relevant dates for chart range
   const allDates: number[] = [today.getTime()];
   tasks.forEach((t) => {
     allDates.push(new Date(t.due + 'T00:00:00').getTime());
@@ -111,11 +144,11 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
     })
     .filter((m) => m.dayOffset >= 0 && m.dayOffset <= totalDays);
 
-  // Fixed column widths
-  const fixedColsWidth = 320 + 100 + 110; // task + priority + due date
+  const fixedColsWidth = 320 + 100 + 110;
+  const groups = groupTasks(tasks, groupBy);
 
   return (
-    <div className="bg-bg-card rounded-xl border border-border-primary overflow-x-auto">
+    <div ref={ganttRef} id="gantt-export-target" className="bg-bg-card rounded-xl border border-border-primary overflow-x-auto print:overflow-visible print:border-0">
       <div className="relative">
         <table className="w-max border-collapse">
           <thead>
@@ -130,7 +163,6 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
                 Due Date
               </th>
               <th className="p-0 border-b border-border-primary bg-bg-header sticky top-0 z-5">
-                {/* Month row */}
                 <div className="flex border-b border-border-primary">
                   {months.map((m, i) => (
                     <div
@@ -142,7 +174,6 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
                     </div>
                   ))}
                 </div>
-                {/* Days row with milestones */}
                 <div className="flex relative">
                   {daysCells.map((d, i) => (
                     <div
@@ -162,7 +193,6 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
                       {d.date.getDate()}
                     </div>
                   ))}
-                  {/* Milestone diamonds */}
                   {milestonesInRange.map((m) => (
                     <div
                       key={m.id}
@@ -184,29 +214,97 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
             </tr>
           </thead>
           <tbody>
-            {tasks.map((task) => (
-              <GanttRow
-                key={task.id}
-                task={task}
+            {groups.map((group) => (
+              <GroupRows
+                key={group.key}
+                group={group}
+                showHeader={groupBy !== 'none'}
+                isCollapsed={collapsed.has(group.key)}
+                onToggle={() => toggleCollapse(group.key)}
                 chartStart={chartStart}
                 totalDays={totalDays}
                 today={today}
                 dayWidth={dayWidth}
+                onReschedule={onReschedule}
+                onCycleStatus={onCycleStatus}
               />
             ))}
           </tbody>
         </table>
 
-        {/* Dependency arrows overlay */}
-        <DependencyArrows
-          tasks={tasks}
-          chartStart={chartStart}
-          today={today}
-          dayWidth={dayWidth}
-          totalDays={totalDays}
-          fixedColsWidth={fixedColsWidth}
-        />
+        {groupBy === 'none' && (
+          <DependencyArrows
+            tasks={tasks}
+            chartStart={chartStart}
+            today={today}
+            dayWidth={dayWidth}
+            totalDays={totalDays}
+            fixedColsWidth={fixedColsWidth}
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+// Sub-component for group rows
+function GroupRows({
+  group,
+  showHeader,
+  isCollapsed,
+  onToggle,
+  chartStart,
+  totalDays,
+  today,
+  dayWidth,
+  onReschedule,
+  onCycleStatus,
+}: {
+  group: { key: string; label: string; tasks: Task[] };
+  showHeader: boolean;
+  isCollapsed: boolean;
+  onToggle: () => void;
+  chartStart: Date;
+  totalDays: number;
+  today: Date;
+  dayWidth: number;
+  onReschedule?: (taskUuid: string, newDueDate: string) => Promise<void>;
+  onCycleStatus?: (taskUuid: string) => Promise<void>;
+}) {
+  return (
+    <>
+      {showHeader && (
+        <tr
+          className="cursor-pointer hover:bg-accent/[0.04] transition-colors"
+          onClick={onToggle}
+        >
+          <td
+            colSpan={4}
+            className="py-2.5 px-4 border-b border-border-primary bg-bg-header/50 text-xs font-semibold text-text-secondary"
+          >
+            <span className="inline-block w-4 text-center mr-1.5 text-text-muted">
+              {isCollapsed ? '▸' : '▾'}
+            </span>
+            {group.label}
+            <span className="ml-2 text-text-muted font-normal">
+              ({group.tasks.length})
+            </span>
+          </td>
+        </tr>
+      )}
+      {!isCollapsed &&
+        group.tasks.map((task) => (
+          <GanttRow
+            key={task.id}
+            task={task}
+            chartStart={chartStart}
+            totalDays={totalDays}
+            today={today}
+            dayWidth={dayWidth}
+            onReschedule={onReschedule}
+            onCycleStatus={onCycleStatus}
+          />
+        ))}
+    </>
   );
 }

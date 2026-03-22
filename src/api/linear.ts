@@ -1,4 +1,4 @@
-import { PRIORITY_MAP, type Milestone, type Project, type Task } from '../types';
+import { PRIORITY_MAP, type Milestone, type Project, type Task, type WorkflowState } from '../types';
 
 const LINEAR_API = 'https://api.linear.app/graphql';
 
@@ -47,7 +47,6 @@ export async function fetchIssues(
   apiKey: string,
   projectId: string,
 ): Promise<{ projectName: string; tasks: Task[]; milestones: Milestone[] }> {
-  // Query 1: project info and milestones
   const data = await gql(
     apiKey,
     `query {
@@ -67,10 +66,12 @@ export async function fetchIssues(
             title
             description
             dueDate
+            url
             priority
             state { name type }
             createdAt
             assignee { name }
+            team { id }
           }
         }
       }
@@ -85,15 +86,16 @@ export async function fetchIssues(
     title: string;
     description: string | null;
     dueDate: string | null;
+    url: string;
     priority: number;
     state: { name: string; type: string } | null;
     createdAt: string;
     assignee: { name: string } | null;
+    team: { id: string } | null;
   }>;
 
   // Query 2: fetch relations and children using issue UUIDs
   const issueIds = issueNodes.filter((n) => n.dueDate).map((n) => n.id);
-  const idToIdentifier = new Map(issueNodes.map((n) => [n.id, n.identifier]));
 
   let relationsMap: Record<string, { blocks: string[]; blockedBy: string[] }> = {};
   let childrenMap: Record<string, { total: number; completed: number }> = {};
@@ -145,7 +147,6 @@ export async function fetchIssues(
         };
       }
     } catch {
-      // If the detail query fails, continue without relations/children
       console.warn('Failed to fetch relations/children — continuing without them');
     }
   }
@@ -159,15 +160,18 @@ export async function fetchIssues(
 
       return {
         id: n.identifier,
+        uuid: n.id,
         title: n.title,
         description: n.description || '',
         due: n.dueDate!,
         startDate: parseStartDate(n.description || ''),
+        url: n.url,
         priorityVal: n.priority,
         priority: PRIORITY_MAP[n.priority] || 'None',
         status: n.state?.name || '',
         statusType: n.state?.type || '',
         assignee: n.assignee?.name || 'Unassigned',
+        teamId: n.team?.id || '',
         blocks: rel.blocks,
         blockedBy: rel.blockedBy,
         progress,
@@ -186,4 +190,45 @@ export async function fetchIssues(
   );
 
   return { projectName: data.project.name, tasks, milestones };
+}
+
+// ---- Mutations ----
+
+export async function updateIssueDueDate(apiKey: string, issueId: string, dueDate: string): Promise<void> {
+  await gql(
+    apiKey,
+    `mutation {
+      issueUpdate(id: "${issueId}", input: { dueDate: "${dueDate}" }) {
+        success
+      }
+    }`,
+  );
+}
+
+export async function updateIssueState(apiKey: string, issueId: string, stateId: string): Promise<void> {
+  await gql(
+    apiKey,
+    `mutation {
+      issueUpdate(id: "${issueId}", input: { stateId: "${stateId}" }) {
+        success
+      }
+    }`,
+  );
+}
+
+export async function fetchWorkflowStates(apiKey: string, teamId: string): Promise<WorkflowState[]> {
+  const data = await gql(
+    apiKey,
+    `query {
+      workflowStates(filter: { team: { id: { eq: "${teamId}" } } }) {
+        nodes {
+          id
+          name
+          type
+          position
+        }
+      }
+    }`,
+  );
+  return (data.workflowStates.nodes as WorkflowState[]).sort((a, b) => a.position - b.position);
 }
