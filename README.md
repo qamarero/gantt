@@ -178,17 +178,6 @@ Copyright (C) 2025-2026 Michel Bitar. All rights reserved.
   <img src="https://contrib.rocks/image?repo=sideq-io/ganttsmart" />
 </a>
 
----
-
-## Star History
-
-<a href="https://star-history.com/#sideq-io/ganttsmart&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=sideq-io/ganttsmart&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=sideq-io/ganttsmart&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=sideq-io/ganttsmart&type=Date" />
- </picture>
-</a>
 
 ---
 
