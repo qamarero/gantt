@@ -129,6 +129,90 @@ export default function GanttChart({
     [colWidths],
   );
 
+  // All computation must happen before early returns to respect Rules of Hooks
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [tasks]); // recompute when tasks change (new day boundary)
+
+  const { chartStart, totalDays } = useMemo(() => {
+    if (!tasks.length) return { chartStart: today, totalDays: 0 };
+
+    const allDates: number[] = [today.getTime()];
+    tasks.forEach((t) => {
+      allDates.push(new Date(t.due + 'T00:00:00').getTime());
+      if (t.startDate) allDates.push(new Date(t.startDate + 'T00:00:00').getTime());
+    });
+    milestones.forEach((m) => {
+      if (m.targetDate) allDates.push(new Date(m.targetDate + 'T00:00:00').getTime());
+    });
+
+    const minDate = new Date(Math.min(...allDates));
+    const maxDate = new Date(Math.max(...allDates));
+    const chartStart = new Date(minDate);
+    chartStart.setDate(chartStart.getDate() - 2);
+    const chartEnd = new Date(maxDate);
+    chartEnd.setDate(chartEnd.getDate() + 3);
+    const dataDays = daysBetween(chartStart, chartEnd);
+
+    const fixedCols = colWidths.task + colWidths.priority + colWidths.due;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth - 80 : 1200;
+    const minDaysToFill = Math.ceil(Math.max(viewportWidth - fixedCols, 0) / dayWidth);
+    const totalDays = Math.max(dataDays, minDaysToFill);
+
+    return { chartStart, totalDays };
+  }, [tasks, milestones, today, colWidths, dayWidth]);
+
+  // Calendar header (memoized)
+  const { months, daysCells } = useMemo(() => {
+    const months: { label: string; days: number }[] = [];
+    const daysCells: { date: Date; isWeekend: boolean; isToday: boolean }[] = [];
+
+    let currentMonth = '';
+    let currentMonthCount = 0;
+
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(chartStart);
+      d.setDate(d.getDate() + i);
+      const mk = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      if (mk !== currentMonth) {
+        if (currentMonth) months.push({ label: currentMonth, days: currentMonthCount });
+        currentMonth = mk;
+        currentMonthCount = 0;
+      }
+      currentMonthCount++;
+
+      daysCells.push({
+        date: d,
+        isWeekend: isWeekend(d),
+        isToday: d.getTime() === today.getTime(),
+      });
+    }
+    if (currentMonth) months.push({ label: currentMonth, days: currentMonthCount });
+
+    return { months, daysCells };
+  }, [chartStart, totalDays, today]);
+
+  // Milestone positions (memoized)
+  const milestonesInRange = useMemo(
+    () =>
+      milestones
+        .filter((m) => m.targetDate)
+        .map((m) => {
+          const mDate = new Date(m.targetDate! + 'T00:00:00');
+          const dayOffset = daysBetween(chartStart, mDate);
+          return { ...m, dayOffset };
+        })
+        .filter((m) => m.dayOffset >= 0 && m.dayOffset <= totalDays),
+    [milestones, chartStart, totalDays],
+  );
+
+  const fixedColsWidth = colWidths.task + colWidths.priority + colWidths.due;
+  const groups = useMemo(() => groupTasks(tasks, groupBy), [tasks, groupBy]);
+
+  // Early returns — after all hooks
   if (loading) {
     return (
       <div className="bg-bg-card rounded-xl border border-border-primary overflow-x-auto">
@@ -210,80 +294,6 @@ export default function GanttChart({
       </div>
     );
   }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const allDates: number[] = [today.getTime()];
-  tasks.forEach((t) => {
-    allDates.push(new Date(t.due + 'T00:00:00').getTime());
-    if (t.startDate) allDates.push(new Date(t.startDate + 'T00:00:00').getTime());
-  });
-  milestones.forEach((m) => {
-    if (m.targetDate) allDates.push(new Date(m.targetDate + 'T00:00:00').getTime());
-  });
-
-  const minDate = new Date(Math.min(...allDates));
-  const maxDate = new Date(Math.max(...allDates));
-  const chartStart = new Date(minDate);
-  chartStart.setDate(chartStart.getDate() - 2);
-  const chartEnd = new Date(maxDate);
-  chartEnd.setDate(chartEnd.getDate() + 3);
-  const dataDays = daysBetween(chartStart, chartEnd);
-
-  // Extend calendar to fill available viewport width
-  const fixedCols = colWidths.task + colWidths.priority + colWidths.due;
-  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth - 80 : 1200; // 80px for page padding
-  const minDaysToFill = Math.ceil(Math.max(viewportWidth - fixedCols, 0) / dayWidth);
-  const totalDays = Math.max(dataDays, minDaysToFill);
-
-  // Calendar header (memoized)
-  const { months, daysCells } = useMemo(() => {
-    const months: { label: string; days: number }[] = [];
-    const daysCells: { date: Date; isWeekend: boolean; isToday: boolean }[] = [];
-
-    let currentMonth = '';
-    let currentMonthCount = 0;
-
-    for (let i = 0; i < totalDays; i++) {
-      const d = new Date(chartStart);
-      d.setDate(d.getDate() + i);
-      const mk = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-      if (mk !== currentMonth) {
-        if (currentMonth) months.push({ label: currentMonth, days: currentMonthCount });
-        currentMonth = mk;
-        currentMonthCount = 0;
-      }
-      currentMonthCount++;
-
-      daysCells.push({
-        date: d,
-        isWeekend: isWeekend(d),
-        isToday: d.getTime() === today.getTime(),
-      });
-    }
-    if (currentMonth) months.push({ label: currentMonth, days: currentMonthCount });
-
-    return { months, daysCells };
-  }, [chartStart, totalDays, today]);
-
-  // Milestone positions (memoized)
-  const milestonesInRange = useMemo(
-    () =>
-      milestones
-        .filter((m) => m.targetDate)
-        .map((m) => {
-          const mDate = new Date(m.targetDate! + 'T00:00:00');
-          const dayOffset = daysBetween(chartStart, mDate);
-          return { ...m, dayOffset };
-        })
-        .filter((m) => m.dayOffset >= 0 && m.dayOffset <= totalDays),
-    [milestones, chartStart, totalDays],
-  );
-
-  const fixedColsWidth = colWidths.task + colWidths.priority + colWidths.due;
-  const groups = groupTasks(tasks, groupBy);
 
   const thBase =
     'py-3.5 text-[11px] font-medium tracking-wide text-text-secondary text-left border-b border-border-primary bg-bg-header sticky top-0 z-5 relative select-none';
