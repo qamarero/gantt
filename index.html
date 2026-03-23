@@ -3,13 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="GanttSmart — Beautiful Gantt chart visualization for Linear projects. Track timelines, priorities, and progress at a glance." />
+    <meta name="theme-color" content="#0f1117" />
+    <meta property="og:title" content="GanttSmart" />
+    <meta property="og:description" content="Beautiful Gantt chart visualization for Linear projects" />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <title>GanttSmart</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Loading skeleton shown before React hydrates -->
+      <style>
+        .skeleton-loader {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          background: #0f1117;
+        }
+        .skeleton-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid #21262d;
+          border-top-color: #58a6ff;
+          border-radius: 50%;
+          animation: sk-spin 0.7s linear infinite;
+        }
+        @keyframes sk-spin {
+          to { transform: rotate(360deg); }
+        }
+      </style>
+      <div class="skeleton-loader">
+        <div class="skeleton-spinner"></div>
+      </div>
+    </div>
+    <noscript>
+      <div style="padding: 40px; text-align: center; font-family: sans-serif; color: #e1e4e8; background: #0f1117; min-height: 100vh;">
+        <h1>GanttSmart</h1>
+        <p>JavaScript is required to run this application.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

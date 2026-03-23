@@ -59,6 +59,7 @@ body {
   min-height: 100vh;
   margin: 0;
   transition: background-color 0.2s ease, color 0.2s ease;
+  scrollbar-gutter: stable;
 }
 
 /* Focus accessibility */
@@ -86,26 +87,20 @@ button, select, input, a {
   animation: pulse-bar 2s ease-in-out infinite;
 }
 
-/* Scrollbar - dark */
-html.dark ::-webkit-scrollbar { height: 8px; width: 8px; }
-html.dark ::-webkit-scrollbar-track { background: var(--color-bg-card); }
-html.dark ::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: 4px; }
-html.dark ::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
-
-/* Scrollbar - light */
-html.light ::-webkit-scrollbar { height: 8px; width: 8px; }
-html.light ::-webkit-scrollbar-track { background: #f0f3f6; }
-html.light ::-webkit-scrollbar-thumb { background: #c0c8d0; border-radius: 4px; }
-html.light ::-webkit-scrollbar-thumb:hover { background: #8c959f; }
+/* Scrollbar — consolidated using CSS variables */
+::-webkit-scrollbar { height: 8px; width: 8px; }
+::-webkit-scrollbar-track { background: var(--color-bg-card); }
+::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
 
 /* Light theme gradient overrides for Gantt bars */
-html.light .bar-urgent { background: linear-gradient(135deg, #a40e26, #cf222e) !important; }
-html.light .bar-high { background: linear-gradient(135deg, #953800, #bf5614) !important; }
-html.light .bar-medium { background: linear-gradient(135deg, #7d5200, #9a6700) !important; }
-html.light .bar-low { background: linear-gradient(135deg, #424a53, #59636e) !important; }
-html.light .bar-none { background: linear-gradient(135deg, #6e7781, #8c959f) !important; }
-html.light .bar-overdue { background: linear-gradient(135deg, #a40e26, #cf222e) !important; }
-html.light .bar-done { background: linear-gradient(135deg, #1a7f37, #218b3e) !important; }
+html.light .gantt-bar.bar-urgent { background: linear-gradient(135deg, #a40e26, #cf222e); }
+html.light .gantt-bar.bar-high { background: linear-gradient(135deg, #953800, #bf5614); }
+html.light .gantt-bar.bar-medium { background: linear-gradient(135deg, #7d5200, #9a6700); }
+html.light .gantt-bar.bar-low { background: linear-gradient(135deg, #424a53, #59636e); }
+html.light .gantt-bar.bar-none { background: linear-gradient(135deg, #6e7781, #8c959f); }
+html.light .gantt-bar.bar-overdue { background: linear-gradient(135deg, #a40e26, #cf222e); }
+html.light .gantt-bar.bar-done { background: linear-gradient(135deg, #1a7f37, #218b3e); }
 
 /* Light theme - semi-transparent adjustments */
 html.light .gantt-bar { color: rgba(255,255,255,0.9); }
@@ -121,6 +116,15 @@ tr:focus-visible {
 @keyframes slide-in {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+/* Reduced motion — disable animations for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Print styles */
