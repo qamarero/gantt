@@ -390,7 +390,7 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
                 {task.id}
               </a>
               {(task.blocks.length > 0 || task.blockedBy.length > 0) && (
-                <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" className="text-text-muted shrink-0" title={
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" className="text-text-muted shrink-0" aria-label={
                   (task.blocks.length > 0 ? `Blocks ${task.blocks.length}` : '') +
                   (task.blocks.length > 0 && task.blockedBy.length > 0 ? ' · ' : '') +
                   (task.blockedBy.length > 0 ? `Blocked by ${task.blockedBy.length}` : '')

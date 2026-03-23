@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Theme } from '../hooks/useTheme';
 
 interface Props {
@@ -33,7 +34,7 @@ function MonitorIcon() {
   );
 }
 
-const options: { value: Theme; label: string; icon: () => JSX.Element }[] = [
+const options: { value: Theme; label: string; icon: () => React.JSX.Element }[] = [
   { value: 'light', label: 'Light', icon: SunIcon },
   { value: 'dark', label: 'Dark', icon: MoonIcon },
   { value: 'system', label: 'System', icon: MonitorIcon },

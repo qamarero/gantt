@@ -82,7 +82,6 @@ export default function DependencyArrows({ tasks, chartStart, today, dayWidth, t
       </defs>
       {arrows.map((a, i) => {
         // Draw a curved path
-        const midX = (a.fromX + a.toX) / 2;
         const dx = Math.abs(a.toX - a.fromX);
         const controlOffset = Math.max(dx * 0.3, 20);
 

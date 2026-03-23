@@ -5,13 +5,6 @@ import type { Filters, GroupBy, Milestone, Task } from '../types';
 
 const DEFAULT_PRIORITIES = new Set([0, 1, 2, 3, 4]);
 
-interface SharedData {
-  projectName: string;
-  cachedData: { tasks: Task[]; milestones: Milestone[] };
-  cachedAt: string;
-  expiresAt: string;
-}
-
 export function useSharedData(shareToken: string) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);

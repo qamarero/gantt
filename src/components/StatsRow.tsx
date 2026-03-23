@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Task } from '../types';
 
 interface Props {
@@ -52,7 +53,7 @@ function CalendarIcon() {
   );
 }
 
-const iconMap: Record<string, () => JSX.Element> = {
+const iconMap: Record<string, () => React.JSX.Element> = {
   Urgent: FlameIcon,
   High: ArrowUpIcon,
   Medium: BarChartIcon,
