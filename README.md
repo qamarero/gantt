@@ -18,8 +18,8 @@
   <a href="https://ganttsmart.com">ganttsmart.com</a>
 </p>
 
-<!-- Add a screenshot of the app here -->
-<!-- ![GanttSmart Screenshot](docs/screenshot.png) -->
+![GanttSmart Screenshot](docs/screenshot.png)
+
 
 ---
 
@@ -166,7 +166,7 @@ Copyright (C) 2025-2026 Michel Bitar. All rights reserved.
 
 ---
 
-## Author
+## Authors
 
 **Michel Bitar** — [GitHub](https://github.com/MichelBitar99)
 

@@ -70,7 +70,7 @@ export default function Landing() {
           </Link>
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/sideq-io/linear-gantt"
+              href="https://github.com/sideq-io/ganttsmart"
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary transition-colors"
@@ -390,7 +390,7 @@ export default function Landing() {
             </span>
           </div>
           <div className="flex items-center gap-5">
-            <a href="https://github.com/sideq-io/linear-gantt" target="_blank" rel="noopener noreferrer" className="text-xs text-text-muted hover:text-text-secondary transition-colors">
+            <a href="https://github.com/sideq-io/ganttsmart" target="_blank" rel="noopener noreferrer" className="text-xs text-text-muted hover:text-text-secondary transition-colors">
               GitHub
             </a>
           </div>
