@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  DebounceCancelled,
   fetchIssues,
   fetchProjects,
   fetchWorkflowStates,
@@ -38,6 +39,7 @@ export function useLinearData(linearToken: string) {
 
   const initialLoadDone = useRef(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingMutations = useRef(0); // guards polling from overwriting optimistic state
 
   // Undo stack: stores previous task snapshots
   const undoStackRef = useRef<Array<{ tasks: Task[]; label: string }>>([]);
@@ -85,9 +87,11 @@ export function useLinearData(linearToken: string) {
   }, [linearToken]);
 
   // Silent refresh for polling (no loading spinner, no error clearing)
+  // Skips if there are pending mutations to avoid overwriting optimistic state
   const silentRefresh = useCallback(
     async (projectId: string) => {
       if (!linearToken || !projectId) return;
+      if (pendingMutations.current > 0) return; // don't clobber optimistic state
       try {
         const result = await fetchIssues(linearToken, projectId);
         setTasks(result.tasks);
@@ -168,6 +172,7 @@ export function useLinearData(linearToken: string) {
       const task = tasks.find((t) => t.uuid === taskUuid);
       setTasks((prev) => prev.map((t) => (t.uuid === taskUuid ? { ...t, due: newDueDate } : t)));
 
+      pendingMutations.current++;
       try {
         await updateIssueDueDate(linearToken, taskUuid, newDueDate);
         pushUndo(prevTasks, `${task?.id || ''} due date`);
@@ -179,8 +184,11 @@ export function useLinearData(linearToken: string) {
           },
         });
       } catch (e) {
+        if (e instanceof DebounceCancelled) return; // superseded by a newer drag — don't rollback
         setTasks(prevTasks);
         toastError(`Failed to update due date: ${(e as Error).message}`, () => reschedule(taskUuid, newDueDate));
+      } finally {
+        pendingMutations.current--;
       }
     },
     [linearToken, tasks, pushUndo],
@@ -195,6 +203,7 @@ export function useLinearData(linearToken: string) {
       const task = tasks.find((t) => t.uuid === taskUuid);
       setTasks((prev) => prev.map((t) => (t.uuid === taskUuid ? { ...t, startDate: newStartDate } : t)));
 
+      pendingMutations.current++;
       try {
         await updateIssueStartDate(linearToken, taskUuid, newStartDate);
         pushUndo(prevTasks, `${task?.id || ''} start date`);
@@ -206,10 +215,13 @@ export function useLinearData(linearToken: string) {
           },
         });
       } catch (e) {
+        if (e instanceof DebounceCancelled) return; // superseded by a newer drag
         setTasks(prevTasks);
         toastError(`Failed to update start date: ${(e as Error).message}`, () =>
           rescheduleStart(taskUuid, newStartDate),
         );
+      } finally {
+        pendingMutations.current--;
       }
     },
     [linearToken, tasks, pushUndo],
@@ -235,6 +247,7 @@ export function useLinearData(linearToken: string) {
         prev.map((t) => (t.uuid === taskUuid ? { ...t, status: nextState.name, statusType: nextState.type } : t)),
       );
 
+      pendingMutations.current++;
       try {
         await updateIssueState(linearToken, taskUuid, nextState.id);
         pushUndo(prevTasks, `${task.id} status`);
@@ -248,6 +261,8 @@ export function useLinearData(linearToken: string) {
       } catch (e) {
         setTasks(prevTasks);
         toastError(`Failed to update status: ${(e as Error).message}`, () => cycleStatus(taskUuid));
+      } finally {
+        pendingMutations.current--;
       }
     },
     [linearToken, workflowStates, tasks, pushUndo],

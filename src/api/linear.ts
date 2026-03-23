@@ -88,16 +88,27 @@ function delay(ms: number) {
 }
 
 // ---- Debounce helper for drag operations ----
-const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const debounceTimers = new Map<string, { timer: ReturnType<typeof setTimeout>; reject: (reason: unknown) => void }>();
+
+class DebounceCancelled extends Error {
+  constructor() {
+    super('Debounced call was superseded');
+    this.name = 'DebounceCancelled';
+  }
+}
+
+export { DebounceCancelled };
 
 export function debouncedApiCall<T>(key: string, fn: () => Promise<T>, delayMs = 300): Promise<T> {
   return new Promise((resolve, reject) => {
     const existing = debounceTimers.get(key);
-    if (existing) clearTimeout(existing);
+    if (existing) {
+      clearTimeout(existing.timer);
+      existing.reject(new DebounceCancelled()); // resolve the orphaned promise
+    }
 
-    debounceTimers.set(
-      key,
-      setTimeout(async () => {
+    debounceTimers.set(key, {
+      timer: setTimeout(async () => {
         debounceTimers.delete(key);
         try {
           resolve(await fn());
@@ -105,7 +116,8 @@ export function debouncedApiCall<T>(key: string, fn: () => Promise<T>, delayMs =
           reject(e);
         }
       }, delayMs),
-    );
+      reject,
+    });
   });
 }
 
