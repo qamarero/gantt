@@ -7,6 +7,7 @@ import Legend from './components/Legend';
 import LinearConnect from './components/LinearConnect';
 import Onboarding from './components/Onboarding';
 import StatsRow from './components/StatsRow';
+import ToastContainer from './components/Toast';
 import Toolbar from './components/Toolbar';
 import Tooltip from './components/Tooltip';
 import { useAuth } from './hooks/useAuth';
@@ -133,6 +134,7 @@ function GanttView({ linearToken, onDisconnectLinear, onSignOut }: { linearToken
         onCycleStatus={cycleStatus}
       />
       <Tooltip />
+      <ToastContainer />
     </div>
   );
 }

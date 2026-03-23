@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchIssues, fetchProjects, fetchWorkflowStates, updateIssueDueDate, updateIssueStartDate, updateIssueState } from '../api/linear';
+import { toastError, toastSuccess } from '../components/Toast';
 import { DEFAULT_DAY_WIDTH, MAX_DAY_WIDTH, MIN_DAY_WIDTH } from '../types';
 import type { Filters, GroupBy, Milestone, Project, Task, WorkflowState } from '../types';
 
@@ -46,9 +47,14 @@ export function useLinearData(linearToken: string) {
 
   const loadProjects = useCallback(async () => {
     if (!linearToken) return;
-    const p = await fetchProjects(linearToken);
-    setProjects(p);
-    return p;
+    try {
+      const p = await fetchProjects(linearToken);
+      setProjects(p);
+      return p;
+    } catch (e) {
+      toastError(`Failed to load projects: ${(e as Error).message}`);
+      throw e;
+    }
   }, [linearToken]);
 
   const loadIssues = useCallback(
@@ -69,13 +75,15 @@ export function useLinearData(linearToken: string) {
             const states = await fetchWorkflowStates(linearToken, result.tasks[0].teamId);
             setWorkflowStates(states);
           } catch {
-            console.warn('Failed to fetch workflow states');
+            // Non-critical — status cycling won't work but chart still shows
           }
         }
       } catch (e) {
-        setError((e as Error).message);
+        const msg = (e as Error).message;
+        setError(msg);
         setTasks([]);
         setMilestones([]);
+        toastError(`Failed to load issues: ${msg}`, () => loadIssues(projectId));
       } finally {
         setLoading(false);
       }
@@ -105,28 +113,58 @@ export function useLinearData(linearToken: string) {
     setDayWidth((w) => Math.max(w - 7, MIN_DAY_WIDTH));
   }, []);
 
+  // Optimistic reschedule (due date) with rollback
   const reschedule = useCallback(
     async (taskUuid: string, newDueDate: string) => {
       if (!linearToken) return;
-      await updateIssueDueDate(linearToken, taskUuid, newDueDate);
+
+      // Save previous state for rollback
+      const prevTasks = tasks;
+      // Optimistic update
       setTasks((prev) =>
         prev.map((t) => (t.uuid === taskUuid ? { ...t, due: newDueDate } : t)),
       );
+
+      try {
+        await updateIssueDueDate(linearToken, taskUuid, newDueDate);
+        toastSuccess('Due date updated');
+      } catch (e) {
+        // Rollback
+        setTasks(prevTasks);
+        toastError(
+          `Failed to update due date: ${(e as Error).message}`,
+          () => reschedule(taskUuid, newDueDate),
+        );
+      }
     },
-    [linearToken],
+    [linearToken, tasks],
   );
 
+  // Optimistic reschedule (start date) with rollback
   const rescheduleStart = useCallback(
     async (taskUuid: string, newStartDate: string) => {
       if (!linearToken) return;
-      await updateIssueStartDate(linearToken, taskUuid, newStartDate);
+
+      const prevTasks = tasks;
       setTasks((prev) =>
         prev.map((t) => (t.uuid === taskUuid ? { ...t, startDate: newStartDate } : t)),
       );
+
+      try {
+        await updateIssueStartDate(linearToken, taskUuid, newStartDate);
+        toastSuccess('Start date updated');
+      } catch (e) {
+        setTasks(prevTasks);
+        toastError(
+          `Failed to update start date: ${(e as Error).message}`,
+          () => rescheduleStart(taskUuid, newStartDate),
+        );
+      }
     },
-    [linearToken],
+    [linearToken, tasks],
   );
 
+  // Optimistic status cycle with rollback
   const cycleStatus = useCallback(
     async (taskUuid: string) => {
       if (!linearToken || workflowStates.length === 0) return;
@@ -140,12 +178,24 @@ export function useLinearData(linearToken: string) {
       const nextState = workflowStates.find((s) => s.type === nextType);
       if (!nextState || nextState.name === task.status) return;
 
-      await updateIssueState(linearToken, taskUuid, nextState.id);
+      const prevTasks = tasks;
+      // Optimistic update
       setTasks((prev) =>
         prev.map((t) =>
           t.uuid === taskUuid ? { ...t, status: nextState.name, statusType: nextState.type } : t,
         ),
       );
+
+      try {
+        await updateIssueState(linearToken, taskUuid, nextState.id);
+        toastSuccess(`Status → ${nextState.name}`);
+      } catch (e) {
+        setTasks(prevTasks);
+        toastError(
+          `Failed to update status: ${(e as Error).message}`,
+          () => cycleStatus(taskUuid),
+        );
+      }
     },
     [linearToken, workflowStates, tasks],
   );
