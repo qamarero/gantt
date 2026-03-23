@@ -205,6 +205,50 @@ export async function updateIssueDueDate(apiKey: string, issueId: string, dueDat
   );
 }
 
+/**
+ * Update the start date stored in the issue description as `start: DD-MM-YY`.
+ * Fetches the current description, replaces or appends the start date tag, then updates via mutation.
+ */
+export async function updateIssueStartDate(apiKey: string, issueId: string, startDate: string): Promise<void> {
+  // Fetch current description
+  const data = await gql(
+    apiKey,
+    `query { issue(id: "${issueId}") { description } }`,
+  );
+  const currentDesc: string = data.issue?.description || '';
+
+  // Format the new start tag: start: DD-MM-YY
+  const d = new Date(startDate + 'T00:00:00');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  const newTag = `start: ${dd}-${mm}-${yy}`;
+
+  let newDesc: string;
+  if (/start:\s*\d{2}-\d{2}-\d{2}/i.test(currentDesc)) {
+    // Replace existing start tag
+    newDesc = currentDesc.replace(/start:\s*\d{2}-\d{2}-\d{2}/i, newTag);
+  } else {
+    // Append start tag at end
+    newDesc = currentDesc.trim() ? `${currentDesc.trim()}\n${newTag}` : newTag;
+  }
+
+  // Escape description for GraphQL string (handle newlines, quotes, backslashes)
+  const escaped = newDesc
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n');
+
+  await gql(
+    apiKey,
+    `mutation {
+      issueUpdate(id: "${issueId}", input: { description: "${escaped}" }) {
+        success
+      }
+    }`,
+  );
+}
+
 export async function updateIssueState(apiKey: string, issueId: string, stateId: string): Promise<void> {
   await gql(
     apiKey,

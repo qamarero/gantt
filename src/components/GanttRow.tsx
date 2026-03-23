@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { Task } from '../types';
+import type { ColumnWidths } from './GanttChart';
+import { Avatar } from '../utils/avatar';
 import { hideTooltip, showTooltip } from './Tooltip';
 
 interface Props {
@@ -8,7 +10,9 @@ interface Props {
   totalDays: number;
   today: Date;
   dayWidth: number;
+  colWidths: ColumnWidths;
   onReschedule?: (taskUuid: string, newDueDate: string) => Promise<void>;
+  onRescheduleStart?: (taskUuid: string, newStartDate: string) => Promise<void>;
   onCycleStatus?: (taskUuid: string) => Promise<void>;
 }
 
@@ -62,11 +66,52 @@ const priorityBadgeClasses: Record<string, string> = {
   none: 'bg-none/15 text-none border border-none/25',
 };
 
+// Status type → dot color
+const statusDotColors: Record<string, string> = {
+  started: '#58a6ff',
+  unstarted: '#484f58',
+  completed: '#238636',
+  canceled: '#8b949e',
+  triage: '#d2992a',
+  backlog: '#484f58',
+};
+
+// Priority SVG icons (tiny inline)
+function PriorityIcon({ val }: { val: number }) {
+  const cls = 'inline-block shrink-0';
+  if (val === 1) return (
+    <svg className={cls} width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M8 1.5a.5.5 0 01.5.5v5.793l2.146-2.147a.5.5 0 01.708.708l-3 3a.5.5 0 01-.708 0l-3-3a.5.5 0 11.708-.708L7.5 7.793V2a.5.5 0 01.5-.5z" transform="rotate(180 8 8)" />
+      <path d="M3.5 13a.5.5 0 01.5-.5h8a.5.5 0 010 1H4a.5.5 0 01-.5-.5z" transform="rotate(180 8 8)" />
+    </svg>
+  );
+  if (val === 2) return (
+    <svg className={cls} width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M8 3l4 5H4l4-5z" />
+    </svg>
+  );
+  if (val === 3) return (
+    <svg className={cls} width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+      <rect x="3" y="7" width="10" height="2" rx="1" />
+    </svg>
+  );
+  if (val === 4) return (
+    <svg className={cls} width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M8 13l-4-5h8l-4 5z" />
+    </svg>
+  );
+  return (
+    <svg className={cls} width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="8" cy="8" r="4" />
+    </svg>
+  );
+}
+
 function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
-export default function GanttRow({ task, chartStart, totalDays, today, dayWidth, onReschedule, onCycleStatus }: Props) {
+export default function GanttRow({ task, chartStart, totalDays, today, dayWidth, colWidths, onReschedule, onRescheduleStart, onCycleStatus }: Props) {
   const pCls = priorityClass(task.priorityVal);
   const dueDate = new Date(task.due + 'T00:00:00');
   const daysLeft = daysBetween(today, dueDate);
@@ -75,10 +120,23 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
   const hasStartDate = !!task.startDate;
   const taskStartDate = hasStartDate ? new Date(task.startDate + 'T00:00:00') : null;
 
-  // Drag state
+  // Drag state — due date (right edge)
   const [dragDelta, setDragDelta] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number } | null>(null);
+
+  // Drag state — start date (left edge)
+  const [startDragDelta, setStartDragDelta] = useState(0);
+  const [isDraggingStart, setIsDraggingStart] = useState(false);
+  const startDragRef = useRef<{ startX: number } | null>(null);
+
+  // Drag state — whole bar (move both dates)
+  const [moveDelta, setMoveDelta] = useState(0);
+  const [isMoving, setIsMoving] = useState(false);
+  const moveRef = useRef<{ startX: number } | null>(null);
+  const didDragRef = useRef(false);
+
+  const isAnyDrag = isDragging || isDraggingStart || isMoving;
 
   // Bar position
   let barLeft: number;
@@ -104,10 +162,11 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
     barWidth = Math.max((barEndDay - barStartDay) * dayWidth, dayWidth);
   }
 
-  // Apply drag delta to bar width
-  const displayBarWidth = Math.max(barWidth + dragDelta, dayWidth);
+  // Apply due date drag (extends/shrinks right edge), start drag (moves left edge), or whole-bar move
+  const displayBarWidth = Math.max(barWidth + dragDelta - startDragDelta, dayWidth);
+  const displayBarLeft = barLeft + startDragDelta + moveDelta;
 
-  // Calculate new due date from drag delta
+  // Calculate new dates from drag deltas
   const dragDays = Math.round(dragDelta / dayWidth);
   const newDueDate = dragDays !== 0 ? (() => {
     const d = new Date(dueDate);
@@ -115,17 +174,40 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
     return d;
   })() : null;
 
-  // Bar label
+  // For start date drag: use existing start date as base, or the bar's visual start position
+  const startDragDays = Math.round(startDragDelta / dayWidth);
+  const barStartBaseDate = taskStartDate || (() => {
+    // Derive from bar's left position (barLeft / dayWidth days from chartStart)
+    const d = new Date(chartStart);
+    d.setDate(d.getDate() + Math.round(barLeft / dayWidth));
+    return d;
+  })();
+  const newStartDate = startDragDays !== 0 ? (() => {
+    const d = new Date(barStartBaseDate);
+    d.setDate(d.getDate() + startDragDays);
+    return d;
+  })() : null;
+
+  const moveDays = Math.round(moveDelta / dayWidth);
+
   let barLabel: string;
   if (isDragging && newDueDate) {
     barLabel = newDueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } else if (isDraggingStart && newStartDate) {
+    barLabel = newStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } else if (isMoving && moveDays !== 0) {
+    barLabel = `${moveDays > 0 ? '+' : ''}${moveDays}d`;
   } else if (task.totalChildren > 0) {
     barLabel = `${task.completedChildren}/${task.totalChildren}`;
   } else {
     barLabel = overdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d`;
   }
 
-  // Drag handlers
+  function formatDateStr(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  // Due date drag (right edge)
   const handleDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -148,8 +230,7 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
         if (days !== 0) {
           const nd = new Date(dueDate);
           nd.setDate(nd.getDate() + days);
-          const dateStr = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, '0')}-${String(nd.getDate()).padStart(2, '0')}`;
-          await onReschedule(task.uuid, dateStr);
+          await onReschedule(task.uuid, formatDateStr(nd));
         }
       }
       dragRef.current = null;
@@ -159,6 +240,97 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   }, [dayWidth, dueDate, onReschedule, task.uuid]);
+
+  // Start date drag (left edge)
+  const handleStartDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    startDragRef.current = { startX: e.clientX };
+    setIsDraggingStart(true);
+
+    const onMove = (ev: MouseEvent) => {
+      if (!startDragRef.current) return;
+      setStartDragDelta(ev.clientX - startDragRef.current.startX);
+    };
+
+    const onUp = async (ev: MouseEvent) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      setIsDraggingStart(false);
+
+      if (startDragRef.current && onRescheduleStart) {
+        const delta = ev.clientX - startDragRef.current.startX;
+        const days = Math.round(delta / dayWidth);
+        if (days !== 0) {
+          // Use existing start date or derive from bar's visual left edge
+          const base = taskStartDate || (() => {
+            const d = new Date(chartStart);
+            d.setDate(d.getDate() + Math.round(barLeft / dayWidth));
+            return d;
+          })();
+          const nd = new Date(base);
+          nd.setDate(nd.getDate() + days);
+          await onRescheduleStart(task.uuid, formatDateStr(nd));
+        }
+      }
+      startDragRef.current = null;
+      setStartDragDelta(0);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [dayWidth, taskStartDate, onRescheduleStart, task.uuid, chartStart, barLeft]);
+
+  // Whole bar move (shift both start and due dates)
+  const handleMoveStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    moveRef.current = { startX: e.clientX };
+    didDragRef.current = false;
+    setIsMoving(true);
+
+    const onMove = (ev: MouseEvent) => {
+      if (!moveRef.current) return;
+      const delta = ev.clientX - moveRef.current.startX;
+      if (Math.abs(delta) > 3) didDragRef.current = true;
+      setMoveDelta(delta);
+    };
+
+    const onUp = async (ev: MouseEvent) => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      setIsMoving(false);
+
+      if (moveRef.current) {
+        const delta = ev.clientX - moveRef.current.startX;
+        const days = Math.round(delta / dayWidth);
+        if (days !== 0) {
+          // Update due date
+          if (onReschedule) {
+            const nd = new Date(dueDate);
+            nd.setDate(nd.getDate() + days);
+            await onReschedule(task.uuid, formatDateStr(nd));
+          }
+          // Update start date
+          if (onRescheduleStart) {
+            const base = taskStartDate || (() => {
+              const d = new Date(chartStart);
+              d.setDate(d.getDate() + Math.round(barLeft / dayWidth));
+              return d;
+            })();
+            const ns = new Date(base);
+            ns.setDate(ns.getDate() + days);
+            await onRescheduleStart(task.uuid, formatDateStr(ns));
+          }
+        }
+      }
+      moveRef.current = null;
+      setMoveDelta(0);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [dayWidth, dueDate, taskStartDate, onReschedule, onRescheduleStart, task.uuid, chartStart, barLeft]);
 
   // Background day cells
   const bgDays: { isWeekend: boolean; isToday: boolean }[] = [];
@@ -172,76 +344,90 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
   }
 
   const progressWidth = task.totalChildren > 0 ? `${task.progress}%` : undefined;
+  const statusDotColor = statusDotColors[task.statusType] || '#484f58';
 
   return (
-    <tr className="transition-colors hover:bg-accent/[0.04]">
+    <tr className="transition-colors duration-150 hover:bg-accent/[0.03] border-l-2 border-l-transparent hover:border-l-accent">
       {/* Task info */}
-      <td className="py-3.5 px-4 min-w-[320px] max-w-[320px] w-[320px] border-b border-border-primary align-middle">
-        <div className="text-[11px] font-semibold mb-0.5 tracking-wide" style={{ color: idColors[pCls] }}>
-          <a
-            href={task.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline"
-            style={{ color: 'inherit' }}
-          >
-            {task.id}
-          </a>
-          {(task.blocks.length > 0 || task.blockedBy.length > 0) && (
-            <span className="ml-1.5 text-[9px] text-text-muted font-normal">
-              {task.blocks.length > 0 && `blocks ${task.blocks.length}`}
-              {task.blocks.length > 0 && task.blockedBy.length > 0 && ' · '}
-              {task.blockedBy.length > 0 && `blocked by ${task.blockedBy.length}`}
-            </span>
-          )}
-        </div>
-        <div className="text-[13px] font-medium text-text-primary leading-snug whitespace-nowrap overflow-hidden text-ellipsis max-w-[280px]">
-          {task.title}
-        </div>
-        <div className="text-[10px] text-text-muted mt-0.5">
-          <button
-            onClick={() => onCycleStatus?.(task.uuid)}
-            className="hover:text-accent cursor-pointer transition-colors"
-            title="Click to cycle status"
-          >
-            {task.status}
-          </button>
-          {' '}&middot; {task.assignee}
-          {task.totalChildren > 0 && (
-            <span className="ml-1">
-              &middot; {task.completedChildren}/{task.totalChildren} subtasks
-            </span>
-          )}
+      <td className="py-3 px-4 border-b border-border-primary align-middle overflow-hidden" style={{ width: colWidths.task, minWidth: 200, maxWidth: colWidths.task }}>
+        <div className="flex items-start gap-2.5">
+          <Avatar name={task.assignee} size="sm" className="mt-0.5" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <a
+                href={task.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-semibold tracking-wide hover:underline"
+                style={{ color: idColors[pCls] }}
+              >
+                {task.id}
+              </a>
+              {(task.blocks.length > 0 || task.blockedBy.length > 0) && (
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" className="text-text-muted shrink-0" title={
+                  (task.blocks.length > 0 ? `Blocks ${task.blocks.length}` : '') +
+                  (task.blocks.length > 0 && task.blockedBy.length > 0 ? ' · ' : '') +
+                  (task.blockedBy.length > 0 ? `Blocked by ${task.blockedBy.length}` : '')
+                }>
+                  <path d="M4.5 2A2.5 2.5 0 002 4.5v1a.5.5 0 001 0v-1A1.5 1.5 0 014.5 3h1a.5.5 0 000-1h-1zm6 0a.5.5 0 000 1h1A1.5 1.5 0 0113 4.5v1a.5.5 0 001 0v-1A2.5 2.5 0 0011.5 2h-1zm-8 8a.5.5 0 01.5.5v1A1.5 1.5 0 004.5 13h1a.5.5 0 010 1h-1A2.5 2.5 0 012 11.5v-1a.5.5 0 01.5-.5zm11 0a.5.5 0 01.5.5v1a2.5 2.5 0 01-2.5 2.5h-1a.5.5 0 010-1h1a1.5 1.5 0 001.5-1.5v-1a.5.5 0 01.5-.5z" />
+                </svg>
+              )}
+            </div>
+            <div className="text-[13px] font-medium text-text-primary leading-snug truncate" style={{ maxWidth: colWidths.task - 60 }}>
+              {task.title}
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              {/* Status chip */}
+              <button
+                onClick={() => onCycleStatus?.(task.uuid)}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-bg-hover border border-border-primary hover:border-accent hover:text-accent cursor-pointer transition-colors text-text-secondary"
+                title="Click to cycle status"
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: statusDotColor }}
+                />
+                {task.status}
+              </button>
+              {/* Assignee name */}
+              <span className="text-[10.5px] text-text-secondary">{task.assignee}</span>
+              {/* Subtask count */}
+              {task.totalChildren > 0 && (
+                <span className="text-[10px] text-text-muted">
+                  {task.completedChildren}/{task.totalChildren} subtasks
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       </td>
 
       {/* Priority */}
-      <td className="py-3 px-4 w-[100px] min-w-[100px] border-b border-border-primary align-middle">
+      <td className="py-3 px-3 border-b border-border-primary align-middle" style={{ width: colWidths.priority, minWidth: 60 }}>
         <span
-          className={`inline-flex items-center gap-1.5 text-[11px] font-semibold py-0.5 px-2.5 rounded-full tracking-wide ${priorityBadgeClasses[pCls]}`}
+          className={`inline-flex items-center gap-1 text-[11px] font-semibold py-0.5 px-2 rounded-full tracking-wide ${priorityBadgeClasses[pCls]}`}
         >
+          <PriorityIcon val={task.priorityVal} />
           {task.priority}
         </span>
       </td>
 
       {/* Due date */}
-      <td className="py-3 px-4 text-xs text-text-secondary w-[110px] min-w-[110px] whitespace-nowrap border-b border-border-primary align-middle">
-        {hasStartDate && (
-          <>
-            <span className="text-[10px] text-text-muted">{formatDate(task.startDate!)}</span>
-            <span className="text-[10px] text-text-muted"> → </span>
-          </>
-        )}
-        {formatDate(task.due)}
-        <br />
-        <span
-          className="text-[10px]"
-          style={{
-            color: overdue ? '#f85149' : daysLeft <= 14 ? '#ffa657' : '#484f58',
-          }}
-        >
-          {overdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft} days left`}
-        </span>
+      <td className="py-3 px-4 text-xs text-text-secondary whitespace-nowrap border-b border-border-primary align-middle tabular-nums" style={{ width: colWidths.due, minWidth: 80 }}>
+        <div className="flex flex-col">
+          {hasStartDate && (
+            <span className="text-[10px] text-text-muted">{formatDate(task.startDate!)} →</span>
+          )}
+          <span>{formatDate(task.due)}</span>
+          <span
+            className="text-[10px]"
+            style={{
+              color: overdue ? '#f85149' : daysLeft <= 14 ? '#ffa657' : undefined,
+            }}
+          >
+            {overdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft} days left`}
+          </span>
+        </div>
       </td>
 
       {/* Chart */}
@@ -265,19 +451,27 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
 
           {/* Main bar */}
           <div
-            className={`gantt-bar absolute h-[26px] rounded-md top-[3px] flex items-center justify-end pr-2 text-[10px] font-semibold text-white/70 z-[2] min-w-[20px] cursor-pointer transition-[filter,transform] duration-150 hover:brightness-120 hover:scale-y-110 ${overdue && !hasStartDate ? 'bar-overdue animate-pulse-bar' : `bar-${pCls}`} ${isDragging ? '!transition-none !transform-none opacity-80' : ''}`}
+            className={`gantt-bar absolute h-[26px] rounded-md top-[3px] flex items-center justify-end pr-2 text-[10px] font-semibold text-white/70 z-[2] min-w-[20px] transition-[filter,transform] duration-150 hover:brightness-120 hover:scale-y-110 ${overdue && !hasStartDate ? 'bar-overdue animate-pulse-bar' : `bar-${pCls}`} ${isAnyDrag ? '!transition-none !transform-none opacity-80' : ''} ${(onReschedule || onRescheduleStart) ? (isMoving ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-pointer'}`}
             style={{
-              left: barLeft,
+              left: displayBarLeft,
               width: displayBarWidth,
               background: overdue && !hasStartDate ? 'linear-gradient(135deg, #da3633, #f85149)' : barGradients[pCls],
               boxShadow: overdue && !hasStartDate ? '0 2px 12px rgba(248,81,73,0.5)' : barShadows[pCls],
               overflow: 'hidden',
             }}
-            onClick={() => window.open(task.url, '_blank')}
-            onMouseEnter={(e) => !isDragging && showTooltip(task, e.clientX, e.clientY)}
-            onMouseLeave={() => !isDragging && hideTooltip()}
+            onClick={() => { if (!didDragRef.current) window.open(task.url, '_blank'); }}
+            onMouseDown={(onReschedule || onRescheduleStart) ? handleMoveStart : undefined}
+            onMouseEnter={(e) => !isAnyDrag && showTooltip(task, e.clientX, e.clientY)}
+            onMouseLeave={() => !isAnyDrag && hideTooltip()}
           >
-            {/* Progress fill */}
+            {/* Left drag handle (start date — works for setting new or editing existing) */}
+            {onRescheduleStart && (
+              <div
+                className="absolute left-0 top-0 bottom-0 w-[6px] cursor-col-resize z-[3] hover:bg-white/20 rounded-l-md"
+                onMouseDown={handleStartDragStart}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
             {progressWidth && (
               <div
                 className="absolute left-0 top-0 bottom-0 rounded-md opacity-30 bg-white"
@@ -286,7 +480,6 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
             )}
             <span className="relative z-[1]">{barLabel}</span>
 
-            {/* Drag handle on right edge */}
             {onReschedule && (
               <div
                 className="absolute right-0 top-0 bottom-0 w-[6px] cursor-col-resize z-[3] hover:bg-white/20 rounded-r-md"
@@ -296,7 +489,7 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
             )}
           </div>
 
-          {/* Overdue extension (when task has start date and is overdue) */}
+          {/* Overdue extension */}
           {hasStartDate && overdue && overdueWidth > 0 && (
             <div
               className="absolute h-[26px] rounded-r-md top-[3px] animate-pulse-bar z-[2]"

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchIssues, fetchProjects, fetchWorkflowStates, updateIssueDueDate, updateIssueState } from '../api/linear';
+import { fetchIssues, fetchProjects, fetchWorkflowStates, updateIssueDueDate, updateIssueStartDate, updateIssueState } from '../api/linear';
 import { DEFAULT_DAY_WIDTH, MAX_DAY_WIDTH, MIN_DAY_WIDTH } from '../types';
 import type { Filters, GroupBy, Milestone, Project, Task, WorkflowState } from '../types';
 
@@ -116,6 +116,17 @@ export function useLinearData(linearToken: string) {
     [linearToken],
   );
 
+  const rescheduleStart = useCallback(
+    async (taskUuid: string, newStartDate: string) => {
+      if (!linearToken) return;
+      await updateIssueStartDate(linearToken, taskUuid, newStartDate);
+      setTasks((prev) =>
+        prev.map((t) => (t.uuid === taskUuid ? { ...t, startDate: newStartDate } : t)),
+      );
+    },
+    [linearToken],
+  );
+
   const cycleStatus = useCallback(
     async (taskUuid: string) => {
       if (!linearToken || workflowStates.length === 0) return;
@@ -183,6 +194,7 @@ export function useLinearData(linearToken: string) {
     zoomIn,
     zoomOut,
     reschedule,
+    rescheduleStart,
     cycleStatus,
   };
 }

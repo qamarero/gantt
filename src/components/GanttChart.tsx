@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { GroupBy, Milestone, Task } from '../types';
+import { Avatar } from '../utils/avatar';
 import DependencyArrows from './DependencyArrows';
 import GanttRow from './GanttRow';
 
@@ -11,8 +12,18 @@ interface Props {
   dayWidth: number;
   groupBy: GroupBy;
   onReschedule?: (taskUuid: string, newDueDate: string) => Promise<void>;
+  onRescheduleStart?: (taskUuid: string, newStartDate: string) => Promise<void>;
   onCycleStatus?: (taskUuid: string) => Promise<void>;
 }
+
+export interface ColumnWidths {
+  task: number;
+  priority: number;
+  due: number;
+}
+
+const DEFAULT_WIDTHS: ColumnWidths = { task: 360, priority: 90, due: 110 };
+const MIN_WIDTHS: ColumnWidths = { task: 200, priority: 60, due: 80 };
 
 function isWeekend(date: Date): boolean {
   const d = date.getDay();
@@ -41,9 +52,41 @@ function groupTasks(tasks: Task[], groupBy: GroupBy): { key: string; label: stri
     .map(([key, tasks]) => ({ key, label: key, tasks }));
 }
 
-export default function GanttChart({ tasks, milestones, loading, error, dayWidth, groupBy, onReschedule, onCycleStatus }: Props) {
+// Resize handle component
+function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+
+    const onMove = (ev: MouseEvent) => {
+      onResize(ev.clientX - startX);
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [onResize]);
+
+  return (
+    <div
+      className="absolute right-0 top-0 bottom-0 w-[5px] cursor-col-resize z-10 group hover:bg-accent/30 transition-colors"
+      onMouseDown={handleMouseDown}
+    >
+      <div className="absolute right-0 top-0 bottom-0 w-px bg-border-primary group-hover:bg-accent transition-colors" />
+    </div>
+  );
+}
+
+export default function GanttChart({ tasks, milestones, loading, error, dayWidth, groupBy, onReschedule, onRescheduleStart, onCycleStatus }: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [colWidths, setColWidths] = useState<ColumnWidths>(DEFAULT_WIDTHS);
   const ganttRef = useRef<HTMLDivElement>(null);
+  const baseWidthsRef = useRef<ColumnWidths>(DEFAULT_WIDTHS);
 
   const toggleCollapse = (key: string) => {
     setCollapsed((prev) => {
@@ -53,6 +96,24 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
       return next;
     });
   };
+
+  // Column resize handlers — store base on first drag, apply delta
+  const makeResizeHandler = useCallback((col: keyof ColumnWidths) => {
+    let baseSet = false;
+    return (delta: number) => {
+      if (!baseSet) {
+        baseWidthsRef.current = { ...colWidths };
+        baseSet = true;
+        // Reset on mouseup
+        const resetBase = () => { baseSet = false; document.removeEventListener('mouseup', resetBase); };
+        document.addEventListener('mouseup', resetBase);
+      }
+      setColWidths((prev) => ({
+        ...prev,
+        [col]: Math.max(baseWidthsRef.current[col] + delta, MIN_WIDTHS[col]),
+      }));
+    };
+  }, [colWidths]);
 
   if (loading) {
     return (
@@ -105,7 +166,13 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
   chartStart.setDate(chartStart.getDate() - 2);
   const chartEnd = new Date(maxDate);
   chartEnd.setDate(chartEnd.getDate() + 3);
-  const totalDays = daysBetween(chartStart, chartEnd);
+  const dataDays = daysBetween(chartStart, chartEnd);
+
+  // Extend calendar to fill available viewport width
+  const fixedCols = colWidths.task + colWidths.priority + colWidths.due;
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth - 80 : 1200; // 80px for page padding
+  const minDaysToFill = Math.ceil(Math.max(viewportWidth - fixedCols, 0) / dayWidth);
+  const totalDays = Math.max(dataDays, minDaysToFill);
 
   // Calendar header
   const months: { label: string; days: number }[] = [];
@@ -144,23 +211,28 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
     })
     .filter((m) => m.dayOffset >= 0 && m.dayOffset <= totalDays);
 
-  const fixedColsWidth = 320 + 100 + 110;
+  const fixedColsWidth = colWidths.task + colWidths.priority + colWidths.due;
   const groups = groupTasks(tasks, groupBy);
+
+  const thBase = 'py-3.5 text-[11px] font-medium tracking-wide text-text-secondary text-left border-b border-border-primary bg-bg-header sticky top-0 z-5 relative select-none';
 
   return (
     <div ref={ganttRef} id="gantt-export-target" className="bg-bg-card rounded-xl border border-border-primary overflow-x-auto print:overflow-visible print:border-0">
-      <div className="relative">
-        <table className="w-max border-collapse">
+      <div className="relative" style={{ minWidth: '100%' }}>
+        <table className="border-collapse" style={{ width: fixedColsWidth + totalDays * dayWidth }}>
           <thead>
             <tr>
-              <th className="py-3.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-text-secondary text-left border-b border-border-primary bg-bg-header sticky top-0 z-5 w-[320px] min-w-[320px]">
+              <th className={`${thBase} px-4`} style={{ width: colWidths.task, minWidth: MIN_WIDTHS.task }}>
                 Task
+                <ResizeHandle onResize={makeResizeHandler('task')} />
               </th>
-              <th className="py-3.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-text-secondary text-left border-b border-border-primary bg-bg-header sticky top-0 z-5 w-[100px] min-w-[100px]">
+              <th className={`${thBase} px-3`} style={{ width: colWidths.priority, minWidth: MIN_WIDTHS.priority }}>
                 Priority
+                <ResizeHandle onResize={makeResizeHandler('priority')} />
               </th>
-              <th className="py-3.5 px-4 text-[11px] font-semibold uppercase tracking-wider text-text-secondary text-left border-b border-border-primary bg-bg-header sticky top-0 z-5 w-[110px] min-w-[110px]">
+              <th className={`${thBase} px-4`} style={{ width: colWidths.due, minWidth: MIN_WIDTHS.due }}>
                 Due Date
+                <ResizeHandle onResize={makeResizeHandler('due')} />
               </th>
               <th className="p-0 border-b border-border-primary bg-bg-header sticky top-0 z-5">
                 <div className="flex border-b border-border-primary">
@@ -190,7 +262,10 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
                         borderRight: '1px solid rgba(33,38,45,0.5)',
                       }}
                     >
-                      {d.date.getDate()}
+                      <div className="leading-none">{d.date.getDate()}</div>
+                      <div className={`text-[8px] leading-none mt-0.5 ${d.isToday ? 'text-accent' : 'text-text-muted/70'}`}>
+                        {['Su','Mo','Tu','We','Th','Fr','Sa'][d.date.getDay()]}
+                      </div>
                     </div>
                   ))}
                   {milestonesInRange.map((m) => (
@@ -218,6 +293,7 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
               <GroupRows
                 key={group.key}
                 group={group}
+                groupBy={groupBy}
                 showHeader={groupBy !== 'none'}
                 isCollapsed={collapsed.has(group.key)}
                 onToggle={() => toggleCollapse(group.key)}
@@ -225,7 +301,9 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
                 totalDays={totalDays}
                 today={today}
                 dayWidth={dayWidth}
+                colWidths={colWidths}
                 onReschedule={onReschedule}
+                onRescheduleStart={onRescheduleStart}
                 onCycleStatus={onCycleStatus}
               />
             ))}
@@ -250,6 +328,7 @@ export default function GanttChart({ tasks, milestones, loading, error, dayWidth
 // Sub-component for group rows
 function GroupRows({
   group,
+  groupBy,
   showHeader,
   isCollapsed,
   onToggle,
@@ -257,10 +336,13 @@ function GroupRows({
   totalDays,
   today,
   dayWidth,
+  colWidths,
   onReschedule,
+  onRescheduleStart,
   onCycleStatus,
 }: {
   group: { key: string; label: string; tasks: Task[] };
+  groupBy: GroupBy;
   showHeader: boolean;
   isCollapsed: boolean;
   onToggle: () => void;
@@ -268,7 +350,9 @@ function GroupRows({
   totalDays: number;
   today: Date;
   dayWidth: number;
+  colWidths: ColumnWidths;
   onReschedule?: (taskUuid: string, newDueDate: string) => Promise<void>;
+  onRescheduleStart?: (taskUuid: string, newStartDate: string) => Promise<void>;
   onCycleStatus?: (taskUuid: string) => Promise<void>;
 }) {
   return (
@@ -282,13 +366,21 @@ function GroupRows({
             colSpan={4}
             className="py-2.5 px-4 border-b border-border-primary bg-bg-header/50 text-xs font-semibold text-text-secondary"
           >
-            <span className="inline-block w-4 text-center mr-1.5 text-text-muted">
-              {isCollapsed ? '▸' : '▾'}
-            </span>
-            {group.label}
-            <span className="ml-2 text-text-muted font-normal">
-              ({group.tasks.length})
-            </span>
+            <div className="flex items-center gap-2">
+              <svg
+                width="12" height="12" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                className="text-text-muted shrink-0 transition-transform duration-200"
+                style={{ transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)' }}
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+              {groupBy === 'assignee' && <Avatar name={group.label} size="sm" />}
+              {group.label}
+              <span className="text-text-muted font-normal">
+                ({group.tasks.length})
+              </span>
+            </div>
           </td>
         </tr>
       )}
@@ -301,7 +393,9 @@ function GroupRows({
             totalDays={totalDays}
             today={today}
             dayWidth={dayWidth}
+            colWidths={colWidths}
             onReschedule={onReschedule}
+            onRescheduleStart={onRescheduleStart}
             onCycleStatus={onCycleStatus}
           />
         ))}

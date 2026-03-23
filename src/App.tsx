@@ -46,6 +46,7 @@ function GanttView({ linearToken, onDisconnectLinear, onSignOut }: { linearToken
     zoomIn,
     zoomOut,
     reschedule,
+    rescheduleStart,
     cycleStatus,
   } = useLinearData(linearToken);
 
@@ -128,6 +129,7 @@ function GanttView({ linearToken, onDisconnectLinear, onSignOut }: { linearToken
         dayWidth={dayWidth}
         groupBy={groupBy}
         onReschedule={reschedule}
+        onRescheduleStart={rescheduleStart}
         onCycleStatus={cycleStatus}
       />
       <Tooltip />
