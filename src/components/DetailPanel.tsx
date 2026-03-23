@@ -100,10 +100,13 @@ export default function DetailPanel() {
         onClick={() => closeDetailPanel()}
       />
 
-      {/* Panel */}
+      {/* Panel — bottom sheet on mobile, side panel on desktop */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 bottom-0 z-[151] w-[420px] max-w-[90vw] bg-bg-card border-l border-border-secondary shadow-2xl flex flex-col transition-transform duration-250 ease-out print:hidden ${visible ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed z-[151] bg-bg-card shadow-2xl flex flex-col transition-transform duration-250 ease-out print:hidden
+          inset-x-0 bottom-0 max-h-[75vh] rounded-t-2xl border-t border-border-secondary
+          md:inset-x-auto md:right-0 md:top-0 md:bottom-0 md:max-h-none md:rounded-none md:border-t-0 md:border-l md:w-[420px] md:max-w-[90vw]
+          ${visible ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-primary shrink-0">
