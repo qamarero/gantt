@@ -1,6 +1,6 @@
 export interface Task {
-  id: string;         // display identifier (e.g., "SEED-14")
-  uuid: string;       // Linear UUID for mutations
+  id: string; // display identifier (e.g., "SEED-14")
+  uuid: string; // Linear UUID for mutations
   title: string;
   description: string;
   due: string;
@@ -10,8 +10,8 @@ export interface Task {
   status: string;
   statusType: string;
   assignee: string;
-  url: string;        // direct Linear URL
-  teamId: string;     // team UUID for workflow states
+  url: string; // direct Linear URL
+  teamId: string; // team UUID for workflow states
   blocks: string[];
   blockedBy: string[];
   progress: number;
@@ -34,7 +34,7 @@ export interface Milestone {
 export interface WorkflowState {
   id: string;
   name: string;
-  type: string;  // 'triage' | 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled'
+  type: string; // 'triage' | 'backlog' | 'unstarted' | 'started' | 'completed' | 'canceled'
   position: number;
 }
 

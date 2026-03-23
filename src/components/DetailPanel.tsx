@@ -19,11 +19,20 @@ function formatDateShort(dateStr: string): string {
 }
 
 const priorityColors: Record<string, string> = {
-  Urgent: '#f85149', High: '#ffa657', Medium: '#d2992a', Low: '#8b949e', None: '#484f58',
+  Urgent: '#f85149',
+  High: '#ffa657',
+  Medium: '#d2992a',
+  Low: '#8b949e',
+  None: '#484f58',
 };
 
 const statusDotColors: Record<string, string> = {
-  started: '#58a6ff', unstarted: '#484f58', completed: '#238636', canceled: '#8b949e', triage: '#d2992a', backlog: '#484f58',
+  started: '#58a6ff',
+  unstarted: '#484f58',
+  completed: '#238636',
+  canceled: '#8b949e',
+  triage: '#d2992a',
+  backlog: '#484f58',
 };
 
 // Global state management
@@ -52,7 +61,10 @@ export default function DetailPanel() {
       setVisible(false);
       setTimeout(() => setTask(null), 250); // Wait for slide-out animation
     };
-    return () => { globalOpenPanel = null; globalClosePanel = null; };
+    return () => {
+      globalOpenPanel = null;
+      globalClosePanel = null;
+    };
   }, []);
 
   // Close on Escape
@@ -111,11 +123,17 @@ export default function DetailPanel() {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-primary shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xs font-bold tracking-wide" style={{ color: priorityColor }}>{task.id}</span>
+            <span className="text-xs font-bold tracking-wide" style={{ color: priorityColor }}>
+              {task.id}
+            </span>
             <span className="text-[10px] text-text-muted">·</span>
             <span
               className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-              style={{ backgroundColor: `${priorityColor}18`, color: priorityColor, border: `1px solid ${priorityColor}30` }}
+              style={{
+                backgroundColor: `${priorityColor}18`,
+                color: priorityColor,
+                border: `1px solid ${priorityColor}30`,
+              }}
             >
               {task.priority}
             </span>
@@ -128,16 +146,36 @@ export default function DetailPanel() {
               className="p-1.5 rounded-md hover:bg-bg-hover text-text-muted hover:text-accent transition-colors"
               title="Open in Linear"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
               </svg>
             </a>
             <button
               onClick={() => closeDetailPanel()}
               className="p-1.5 rounded-md hover:bg-bg-hover text-text-muted hover:text-text-primary transition-colors cursor-pointer"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           </div>
@@ -147,9 +185,7 @@ export default function DetailPanel() {
         <div className="flex-1 overflow-y-auto">
           {/* Title section */}
           <div className="px-5 pt-5 pb-4">
-            <h2 className="text-base font-semibold text-text-primary leading-snug mb-4">
-              {task.title}
-            </h2>
+            <h2 className="text-base font-semibold text-text-primary leading-snug mb-4">{task.title}</h2>
 
             {/* Metadata */}
             <div className="space-y-3">
@@ -167,7 +203,11 @@ export default function DetailPanel() {
                 <span className="text-xs text-text-muted">Priority</span>
                 <span
                   className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: `${priorityColor}18`, color: priorityColor, border: `1px solid ${priorityColor}30` }}
+                  style={{
+                    backgroundColor: `${priorityColor}18`,
+                    color: priorityColor,
+                    border: `1px solid ${priorityColor}30`,
+                  }}
                 >
                   {task.priority}
                 </span>
@@ -193,7 +233,10 @@ export default function DetailPanel() {
               )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-text-muted">Due Date</span>
-                <span className="text-xs font-medium tabular-nums" style={{ color: overdue ? '#f85149' : daysLeft <= 7 ? '#ffa657' : undefined }}>
+                <span
+                  className="text-xs font-medium tabular-nums"
+                  style={{ color: overdue ? '#f85149' : daysLeft <= 7 ? '#ffa657' : undefined }}
+                >
                   {formatDateShort(task.due)}
                   <span className="ml-1.5 text-[11px]">
                     ({overdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`})
@@ -209,7 +252,9 @@ export default function DetailPanel() {
               <div className="p-3 rounded-lg bg-bg-primary border border-border-primary">
                 <div className="flex items-center justify-between text-[11px] mb-2">
                   <span className="text-text-muted font-medium">Sub-issue Progress</span>
-                  <span className="text-text-secondary font-semibold">{task.completedChildren}/{task.totalChildren} ({task.progress}%)</span>
+                  <span className="text-text-secondary font-semibold">
+                    {task.completedChildren}/{task.totalChildren} ({task.progress}%)
+                  </span>
                 </div>
                 <div className="h-2 rounded-full bg-border-primary overflow-hidden">
                   <div
@@ -250,9 +295,7 @@ export default function DetailPanel() {
           <div className="px-5 py-4">
             <div className="text-[11px] font-medium text-text-muted mb-2.5">Description</div>
             {desc ? (
-              <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap break-words">
-                {desc}
-              </div>
+              <div className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap break-words">{desc}</div>
             ) : (
               <p className="text-xs text-text-muted italic">No description</p>
             )}

@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetchIssues, fetchProjects, fetchWorkflowStates, updateIssueDueDate, updateIssueStartDate, updateIssueState } from '../api/linear';
+import {
+  fetchIssues,
+  fetchProjects,
+  fetchWorkflowStates,
+  updateIssueDueDate,
+  updateIssueStartDate,
+  updateIssueState,
+} from '../api/linear';
 import { toast, toastError, toastSuccess } from '../components/Toast';
 import { DEFAULT_DAY_WIDTH, MAX_DAY_WIDTH, MIN_DAY_WIDTH } from '../types';
 import type { Filters, GroupBy, Milestone, Project, Task, WorkflowState } from '../types';
@@ -87,9 +94,7 @@ export function useLinearData(linearToken: string) {
         setDoneTasks(result.doneTasks);
         setProjectName(result.projectName);
         setMilestones(result.milestones);
-        setLastSynced(
-          new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        );
+        setLastSynced(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
       } catch {
         // Silent — don't spam toasts on poll failures
       }
@@ -108,9 +113,7 @@ export function useLinearData(linearToken: string) {
         setDoneTasks(result.doneTasks);
         setProjectName(result.projectName);
         setMilestones(result.milestones);
-        setLastSynced(
-          new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        );
+        setLastSynced(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
         if (result.tasks.length > 0 && result.tasks[0].teamId) {
           try {
             const states = await fetchWorkflowStates(linearToken, result.tasks[0].teamId);
@@ -163,23 +166,21 @@ export function useLinearData(linearToken: string) {
 
       const prevTasks = tasks;
       const task = tasks.find((t) => t.uuid === taskUuid);
-      setTasks((prev) =>
-        prev.map((t) => (t.uuid === taskUuid ? { ...t, due: newDueDate } : t)),
-      );
+      setTasks((prev) => prev.map((t) => (t.uuid === taskUuid ? { ...t, due: newDueDate } : t)));
 
       try {
         await updateIssueDueDate(linearToken, taskUuid, newDueDate);
         pushUndo(prevTasks, `${task?.id || ''} due date`);
-        toast(`Due date updated`, 'success', { label: 'Undo', onClick: () => {
-          setTasks(prevTasks);
-          if (task) updateIssueDueDate(linearToken, taskUuid, task.due).catch(() => {});
-        }});
+        toast(`Due date updated`, 'success', {
+          label: 'Undo',
+          onClick: () => {
+            setTasks(prevTasks);
+            if (task) updateIssueDueDate(linearToken, taskUuid, task.due).catch(() => {});
+          },
+        });
       } catch (e) {
         setTasks(prevTasks);
-        toastError(
-          `Failed to update due date: ${(e as Error).message}`,
-          () => reschedule(taskUuid, newDueDate),
-        );
+        toastError(`Failed to update due date: ${(e as Error).message}`, () => reschedule(taskUuid, newDueDate));
       }
     },
     [linearToken, tasks, pushUndo],
@@ -192,22 +193,22 @@ export function useLinearData(linearToken: string) {
 
       const prevTasks = tasks;
       const task = tasks.find((t) => t.uuid === taskUuid);
-      setTasks((prev) =>
-        prev.map((t) => (t.uuid === taskUuid ? { ...t, startDate: newStartDate } : t)),
-      );
+      setTasks((prev) => prev.map((t) => (t.uuid === taskUuid ? { ...t, startDate: newStartDate } : t)));
 
       try {
         await updateIssueStartDate(linearToken, taskUuid, newStartDate);
         pushUndo(prevTasks, `${task?.id || ''} start date`);
-        toast(`Start date updated`, 'success', { label: 'Undo', onClick: () => {
-          setTasks(prevTasks);
-          if (task?.startDate) updateIssueStartDate(linearToken, taskUuid, task.startDate).catch(() => {});
-        }});
+        toast(`Start date updated`, 'success', {
+          label: 'Undo',
+          onClick: () => {
+            setTasks(prevTasks);
+            if (task?.startDate) updateIssueStartDate(linearToken, taskUuid, task.startDate).catch(() => {});
+          },
+        });
       } catch (e) {
         setTasks(prevTasks);
-        toastError(
-          `Failed to update start date: ${(e as Error).message}`,
-          () => rescheduleStart(taskUuid, newStartDate),
+        toastError(`Failed to update start date: ${(e as Error).message}`, () =>
+          rescheduleStart(taskUuid, newStartDate),
         );
       }
     },
@@ -231,24 +232,22 @@ export function useLinearData(linearToken: string) {
       const prevTasks = tasks;
       const prevState = workflowStates.find((s) => s.name === task.status);
       setTasks((prev) =>
-        prev.map((t) =>
-          t.uuid === taskUuid ? { ...t, status: nextState.name, statusType: nextState.type } : t,
-        ),
+        prev.map((t) => (t.uuid === taskUuid ? { ...t, status: nextState.name, statusType: nextState.type } : t)),
       );
 
       try {
         await updateIssueState(linearToken, taskUuid, nextState.id);
         pushUndo(prevTasks, `${task.id} status`);
-        toast(`Status → ${nextState.name}`, 'success', { label: 'Undo', onClick: () => {
-          setTasks(prevTasks);
-          if (prevState) updateIssueState(linearToken, taskUuid, prevState.id).catch(() => {});
-        }});
+        toast(`Status → ${nextState.name}`, 'success', {
+          label: 'Undo',
+          onClick: () => {
+            setTasks(prevTasks);
+            if (prevState) updateIssueState(linearToken, taskUuid, prevState.id).catch(() => {});
+          },
+        });
       } catch (e) {
         setTasks(prevTasks);
-        toastError(
-          `Failed to update status: ${(e as Error).message}`,
-          () => cycleStatus(taskUuid),
-        );
+        toastError(`Failed to update status: ${(e as Error).message}`, () => cycleStatus(taskUuid));
       }
     },
     [linearToken, workflowStates, tasks, pushUndo],
@@ -263,9 +262,7 @@ export function useLinearData(linearToken: string) {
       try {
         const p = await loadProjects();
         if (!p?.length) return;
-        const target = selectedProjectId && p.find((x) => x.id === selectedProjectId)
-          ? selectedProjectId
-          : p[0].id;
+        const target = selectedProjectId && p.find((x) => x.id === selectedProjectId) ? selectedProjectId : p[0].id;
         setSelectedProjectId(target);
         localStorage.setItem('linear_selected_project', target);
         await loadIssues(target);

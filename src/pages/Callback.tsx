@@ -33,7 +33,9 @@ export default function Callback() {
     try {
       setStatus('Exchanging authorization code...');
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
         setError('Not authenticated. Please sign in first.');
         return;
@@ -44,7 +46,7 @@ export default function Callback() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ code }),
       });

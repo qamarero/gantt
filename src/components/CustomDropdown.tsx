@@ -19,7 +19,15 @@ interface Props {
 
 const selectBgImage = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238b949e' d='M1 1l4 4 4-4'/%3E%3C/svg%3E")`;
 
-export default function CustomDropdown({ value, options, placeholder, placeholderIcon, onChange, className = '', required = false }: Props) {
+export default function CustomDropdown({
+  value,
+  options,
+  placeholder,
+  placeholderIcon,
+  onChange,
+  className = '',
+  required = false,
+}: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -60,7 +68,10 @@ export default function CustomDropdown({ value, options, placeholder, placeholde
           {/* "All" option — hidden when required */}
           {!required && (
             <button
-              onClick={() => { onChange(''); setOpen(false); }}
+              onClick={() => {
+                onChange('');
+                setOpen(false);
+              }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left cursor-pointer transition-colors ${
                 !value ? 'bg-accent/10 text-accent' : 'text-text-primary hover:bg-bg-hover'
               }`}
@@ -72,7 +83,10 @@ export default function CustomDropdown({ value, options, placeholder, placeholde
           {options.map((opt) => (
             <button
               key={opt.value}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left cursor-pointer transition-colors ${
                 value === opt.value ? 'bg-accent/10 text-accent' : 'text-text-primary hover:bg-bg-hover'
               }`}

@@ -56,7 +56,9 @@ export default function Tooltip() {
 
   useEffect(() => {
     globalTooltipSetter = setState;
-    return () => { globalTooltipSetter = null; };
+    return () => {
+      globalTooltipSetter = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -104,9 +106,7 @@ export default function Tooltip() {
           <div className="text-[11px] font-semibold tracking-wide mb-0.5" style={{ color: priorityColor }}>
             {task.id}
           </div>
-          <div className="text-sm font-semibold text-text-primary leading-snug truncate">
-            {task.title}
-          </div>
+          <div className="text-sm font-semibold text-text-primary leading-snug truncate">{task.title}</div>
         </div>
       </div>
 
@@ -117,7 +117,11 @@ export default function Tooltip() {
           <div className="text-text-muted text-[10px] mb-0.5">Priority</div>
           <span
             className="inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
-            style={{ backgroundColor: `${priorityColor}20`, color: priorityColor, border: `1px solid ${priorityColor}40` }}
+            style={{
+              backgroundColor: `${priorityColor}20`,
+              color: priorityColor,
+              border: `1px solid ${priorityColor}40`,
+            }}
           >
             {task.priority}
           </span>
@@ -159,13 +163,12 @@ export default function Tooltip() {
         <div className="mb-3">
           <div className="flex items-center justify-between text-[10px] text-text-muted mb-1">
             <span>Progress</span>
-            <span>{task.completedChildren}/{task.totalChildren} subtasks ({task.progress}%)</span>
+            <span>
+              {task.completedChildren}/{task.totalChildren} subtasks ({task.progress}%)
+            </span>
           </div>
           <div className="h-1.5 rounded-full bg-border-primary overflow-hidden">
-            <div
-              className="h-full rounded-full bg-accent transition-all"
-              style={{ width: `${task.progress}%` }}
-            />
+            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${task.progress}%` }} />
           </div>
         </div>
       )}

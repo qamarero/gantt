@@ -57,7 +57,9 @@ export function useAuth() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -143,14 +145,17 @@ export function useAuth() {
     setLinearToken(null);
   }, []);
 
-  const saveLinearToken = useCallback(async (token: string) => {
-    if (!user) return;
-    const { error } = await supabase
-      .from('user_settings')
-      .upsert({ id: user.id, linear_access_token: token, updated_at: new Date().toISOString() });
-    if (error) throw error;
-    setLinearToken(token);
-  }, [user]);
+  const saveLinearToken = useCallback(
+    async (token: string) => {
+      if (!user) return;
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({ id: user.id, linear_access_token: token, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      setLinearToken(token);
+    },
+    [user],
+  );
 
   const disconnectLinear = useCallback(async () => {
     if (!user) return;

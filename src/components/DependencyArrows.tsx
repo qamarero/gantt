@@ -69,14 +69,7 @@ export default function DependencyArrows({ tasks, chartStart, today, dayWidth, t
       style={{ overflow: 'visible' }}
     >
       <defs>
-        <marker
-          id="arrowhead"
-          markerWidth="8"
-          markerHeight="6"
-          refX="8"
-          refY="3"
-          orient="auto"
-        >
+        <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
           <polygon points="0 0, 8 3, 0 6" fill="#f85149" opacity="0.7" />
         </marker>
       </defs>
@@ -92,10 +85,7 @@ export default function DependencyArrows({ tasks, chartStart, today, dayWidth, t
         return (
           <path
             key={i}
-            d={simplePath
-              ? `M ${a.fromX} ${a.fromY} L ${a.toX} ${a.toY}`
-              : path
-            }
+            d={simplePath ? `M ${a.fromX} ${a.fromY} L ${a.toX} ${a.toY}` : path}
             fill="none"
             stroke="#f85149"
             strokeWidth="1.5"

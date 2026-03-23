@@ -55,23 +55,26 @@ function groupTasks(tasks: Task[], groupBy: GroupBy): { key: string; label: stri
 
 // Resize handle component
 function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const startX = e.clientX;
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX;
 
-    const onMove = (ev: MouseEvent) => {
-      onResize(ev.clientX - startX);
-    };
+      const onMove = (ev: MouseEvent) => {
+        onResize(ev.clientX - startX);
+      };
 
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
 
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }, [onResize]);
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    [onResize],
+  );
 
   return (
     <div
@@ -83,7 +86,18 @@ function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
   );
 }
 
-export default function GanttChart({ tasks, doneTasks = [], milestones, loading, error, dayWidth, groupBy, onReschedule, onRescheduleStart, onCycleStatus }: Props) {
+export default function GanttChart({
+  tasks,
+  doneTasks = [],
+  milestones,
+  loading,
+  error,
+  dayWidth,
+  groupBy,
+  onReschedule,
+  onRescheduleStart,
+  onCycleStatus,
+}: Props) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [doneVisible, setDoneVisible] = useState(false);
   const [colWidths, setColWidths] = useState<ColumnWidths>(DEFAULT_WIDTHS);
@@ -100,22 +114,28 @@ export default function GanttChart({ tasks, doneTasks = [], milestones, loading,
   };
 
   // Column resize handlers — store base on first drag, apply delta
-  const makeResizeHandler = useCallback((col: keyof ColumnWidths) => {
-    let baseSet = false;
-    return (delta: number) => {
-      if (!baseSet) {
-        baseWidthsRef.current = { ...colWidths };
-        baseSet = true;
-        // Reset on mouseup
-        const resetBase = () => { baseSet = false; document.removeEventListener('mouseup', resetBase); };
-        document.addEventListener('mouseup', resetBase);
-      }
-      setColWidths((prev) => ({
-        ...prev,
-        [col]: Math.max(baseWidthsRef.current[col] + delta, MIN_WIDTHS[col]),
-      }));
-    };
-  }, [colWidths]);
+  const makeResizeHandler = useCallback(
+    (col: keyof ColumnWidths) => {
+      let baseSet = false;
+      return (delta: number) => {
+        if (!baseSet) {
+          baseWidthsRef.current = { ...colWidths };
+          baseSet = true;
+          // Reset on mouseup
+          const resetBase = () => {
+            baseSet = false;
+            document.removeEventListener('mouseup', resetBase);
+          };
+          document.addEventListener('mouseup', resetBase);
+        }
+        setColWidths((prev) => ({
+          ...prev,
+          [col]: Math.max(baseWidthsRef.current[col] + delta, MIN_WIDTHS[col]),
+        }));
+      };
+    },
+    [colWidths],
+  );
 
   if (loading) {
     return (
@@ -134,13 +154,27 @@ export default function GanttChart({ tasks, doneTasks = [], milestones, loading,
       <div className="bg-bg-card rounded-xl border border-border-primary overflow-x-auto">
         <div className="text-center py-20 px-6">
           <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-urgent/10 flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-urgent">
-              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              className="text-urgent"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
           <h3 className="text-base font-semibold text-text-primary mb-2">Something went wrong</h3>
           <p className="text-sm text-text-secondary mb-1 max-w-md mx-auto">{error}</p>
-          <p className="text-xs text-text-muted">Press <kbd className="px-1.5 py-0.5 bg-bg-hover rounded border border-border-secondary text-[10px]">R</kbd> to retry</p>
+          <p className="text-xs text-text-muted">
+            Press <kbd className="px-1.5 py-0.5 bg-bg-hover rounded border border-border-secondary text-[10px]">R</kbd>{' '}
+            to retry
+          </p>
         </div>
       </div>
     );
@@ -151,18 +185,33 @@ export default function GanttChart({ tasks, doneTasks = [], milestones, loading,
       <div className="bg-bg-card rounded-xl border border-border-primary overflow-x-auto">
         <div className="text-center py-16 px-6">
           <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-accent">
-              <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              className="text-accent"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </div>
           <h3 className="text-base font-semibold text-text-primary mb-2">No tasks to display</h3>
           <p className="text-sm text-text-secondary max-w-sm mx-auto mb-4">
-            This could mean your current filters don't match any tasks, or the selected project has no issues with due dates.
+            This could mean your current filters don't match any tasks, or the selected project has no issues with due
+            dates.
           </p>
           <div className="flex items-center justify-center gap-4 text-xs text-text-muted">
             <span>Try:</span>
             <span className="px-2 py-1 bg-bg-hover rounded-md border border-border-primary">Clear filters</span>
-            <span className="px-2 py-1 bg-bg-hover rounded-md border border-border-primary">Add due dates in Linear</span>
+            <span className="px-2 py-1 bg-bg-hover rounded-md border border-border-primary">
+              Add due dates in Linear
+            </span>
             <span className="px-2 py-1 bg-bg-hover rounded-md border border-border-primary">Switch project</span>
           </div>
         </div>
@@ -236,10 +285,15 @@ export default function GanttChart({ tasks, doneTasks = [], milestones, loading,
   const fixedColsWidth = colWidths.task + colWidths.priority + colWidths.due;
   const groups = groupTasks(tasks, groupBy);
 
-  const thBase = 'py-3.5 text-[11px] font-medium tracking-wide text-text-secondary text-left border-b border-border-primary bg-bg-header sticky top-0 z-5 relative select-none';
+  const thBase =
+    'py-3.5 text-[11px] font-medium tracking-wide text-text-secondary text-left border-b border-border-primary bg-bg-header sticky top-0 z-5 relative select-none';
 
   return (
-    <div ref={ganttRef} id="gantt-export-target" className="bg-bg-card rounded-xl border border-border-primary overflow-x-auto print:overflow-visible print:border-0">
+    <div
+      ref={ganttRef}
+      id="gantt-export-target"
+      className="bg-bg-card rounded-xl border border-border-primary overflow-x-auto print:overflow-visible print:border-0"
+    >
       <div className="relative" style={{ minWidth: '100%' }}>
         <table className="border-collapse" style={{ width: fixedColsWidth + totalDays * dayWidth }}>
           <thead>
@@ -285,8 +339,10 @@ export default function GanttChart({ tasks, doneTasks = [], milestones, loading,
                       }}
                     >
                       <div className="leading-none">{d.date.getDate()}</div>
-                      <div className={`text-[8px] leading-none mt-0.5 ${d.isToday ? 'text-accent' : 'text-text-muted/70'}`}>
-                        {['Su','Mo','Tu','We','Th','Fr','Sa'][d.date.getDay()]}
+                      <div
+                        className={`text-[8px] leading-none mt-0.5 ${d.isToday ? 'text-accent' : 'text-text-muted/70'}`}
+                      >
+                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.date.getDay()]}
                       </div>
                     </div>
                   ))}
@@ -353,23 +409,30 @@ export default function GanttChart({ tasks, doneTasks = [], milestones, loading,
           >
             <div className="flex items-center gap-2">
               <svg
-                width="12" height="12" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 className="text-text-muted shrink-0 transition-transform duration-200"
                 style={{ transform: doneVisible ? 'rotate(90deg)' : 'rotate(0deg)' }}
               >
                 <polyline points="9 18 15 12 9 6" />
               </svg>
               <span className="font-medium">Completed</span>
-              <span className="text-xs text-text-muted bg-bg-hover rounded-full px-2 py-0.5">
-                {doneTasks.length}
-              </span>
+              <span className="text-xs text-text-muted bg-bg-hover rounded-full px-2 py-0.5">{doneTasks.length}</span>
             </div>
             <span className="text-xs text-text-muted">{doneVisible ? 'Hide' : 'Show'}</span>
           </button>
 
           {doneVisible && (
-            <table className="border-collapse opacity-60 hover:opacity-100 transition-opacity" style={{ width: fixedColsWidth + totalDays * dayWidth }}>
+            <table
+              className="border-collapse opacity-60 hover:opacity-100 transition-opacity"
+              style={{ width: fixedColsWidth + totalDays * dayWidth }}
+            >
               <tbody>
                 {doneTasks.map((task) => (
                   <GanttRow
@@ -425,18 +488,21 @@ function GroupRows({
   return (
     <>
       {showHeader && (
-        <tr
-          className="cursor-pointer hover:bg-accent/[0.04] transition-colors"
-          onClick={onToggle}
-        >
+        <tr className="cursor-pointer hover:bg-accent/[0.04] transition-colors" onClick={onToggle}>
           <td
             colSpan={4}
             className="py-2.5 px-4 border-b border-border-primary bg-bg-header/50 text-xs font-semibold text-text-secondary"
           >
             <div className="flex items-center gap-2">
               <svg
-                width="12" height="12" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 className="text-text-muted shrink-0 transition-transform duration-200"
                 style={{ transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)' }}
               >
@@ -444,9 +510,7 @@ function GroupRows({
               </svg>
               {groupBy === 'assignee' && <Avatar name={group.label} size="sm" />}
               {group.label}
-              <span className="text-text-muted font-normal">
-                ({group.tasks.length})
-              </span>
+              <span className="text-text-muted font-normal">({group.tasks.length})</span>
             </div>
           </td>
         </tr>

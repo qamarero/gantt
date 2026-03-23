@@ -56,7 +56,9 @@ export default function ToastContainer() {
 
   useEffect(() => {
     globalAddToast = addToast;
-    return () => { globalAddToast = null; };
+    return () => {
+      globalAddToast = null;
+    };
   }, [addToast]);
 
   return (
@@ -79,13 +81,18 @@ function ToastItem({ toast: t, onDismiss }: { toast: ToastItem; onDismiss: () =>
       className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-sm max-w-[380px] animate-slide-in ${TYPE_CLASSES[t.type]}`}
       style={{ animation: 'slide-in 0.2s ease-out' }}
     >
-      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${ICON_CLASSES[t.type]}`}>
+      <span
+        className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${ICON_CLASSES[t.type]}`}
+      >
         {ICONS[t.type]}
       </span>
       <span className="text-xs text-text-primary flex-1">{t.message}</span>
       {t.action && (
         <button
-          onClick={() => { t.action!.onClick(); onDismiss(); }}
+          onClick={() => {
+            t.action!.onClick();
+            onDismiss();
+          }}
           className="text-[11px] font-semibold text-accent hover:text-accent/80 cursor-pointer shrink-0"
         >
           {t.action.label}

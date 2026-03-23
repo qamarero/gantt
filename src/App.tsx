@@ -19,7 +19,15 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function GanttView({ linearToken, onDisconnectLinear, onSignOut }: { linearToken: string; onDisconnectLinear: () => void; onSignOut: () => void }) {
+function GanttView({
+  linearToken,
+  onDisconnectLinear,
+  onSignOut,
+}: {
+  linearToken: string;
+  onDisconnectLinear: () => void;
+  onSignOut: () => void;
+}) {
   const { theme, setTheme } = useTheme();
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return !localStorage.getItem('gantt_onboarding_done');
@@ -144,16 +152,7 @@ function GanttView({ linearToken, onDisconnectLinear, onSignOut }: { linearToken
 }
 
 export default function App() {
-  const {
-    user,
-    loading,
-    linearToken,
-    signUp,
-    signIn,
-    signInWithGoogle,
-    signOut,
-    disconnectLinear,
-  } = useAuth();
+  const { user, loading, linearToken, signUp, signIn, signInWithGoogle, signOut, disconnectLinear } = useAuth();
 
   // Initialize theme on app load (applies class to <html> even on auth pages)
   useTheme();
@@ -174,11 +173,5 @@ export default function App() {
     return <LinearConnect userEmail={user.email || ''} onSignOut={signOut} />;
   }
 
-  return (
-    <GanttView
-      linearToken={linearToken}
-      onDisconnectLinear={disconnectLinear}
-      onSignOut={signOut}
-    />
-  );
+  return <GanttView linearToken={linearToken} onDisconnectLinear={disconnectLinear} onSignOut={signOut} />;
 }

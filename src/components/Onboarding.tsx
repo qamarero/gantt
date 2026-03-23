@@ -13,8 +13,7 @@ const steps = [
   },
   {
     title: 'Switch Projects',
-    description:
-      'Use the project dropdown in the filter bar to switch between any of your Linear projects.',
+    description: 'Use the project dropdown in the filter bar to switch between any of your Linear projects.',
     tip: 'Your last selected project is remembered automatically.',
   },
   {
@@ -51,11 +50,7 @@ export default function Onboarding({ onComplete }: Props) {
             <div
               key={i}
               className={`w-2 h-2 rounded-full transition-all ${
-                i === step
-                  ? 'bg-accent w-6'
-                  : i < step
-                    ? 'bg-accent/50'
-                    : 'bg-border-secondary'
+                i === step ? 'bg-accent w-6' : i < step ? 'bg-accent/50' : 'bg-border-secondary'
               }`}
             />
           ))}
@@ -63,15 +58,11 @@ export default function Onboarding({ onComplete }: Props) {
 
         {/* Content */}
         <h2 className="text-lg font-bold text-text-primary mb-3 text-center">{current.title}</h2>
-        <p className="text-sm text-text-secondary leading-relaxed text-center mb-4">
-          {current.description}
-        </p>
+        <p className="text-sm text-text-secondary leading-relaxed text-center mb-4">{current.description}</p>
 
         {current.tip && (
           <div className="bg-accent/10 border border-accent/20 rounded-lg px-4 py-2.5 mb-6">
-            <p className="text-xs text-accent">
-              💡 {current.tip}
-            </p>
+            <p className="text-xs text-accent">💡 {current.tip}</p>
           </div>
         )}
 

@@ -90,11 +90,7 @@ function delay(ms: number) {
 // ---- Debounce helper for drag operations ----
 const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-export function debouncedApiCall<T>(
-  key: string,
-  fn: () => Promise<T>,
-  delayMs = 300,
-): Promise<T> {
+export function debouncedApiCall<T>(key: string, fn: () => Promise<T>, delayMs = 300): Promise<T> {
   return new Promise((resolve, reject) => {
     const existing = debounceTimers.get(key);
     if (existing) clearTimeout(existing);
@@ -200,11 +196,18 @@ export async function fetchIssues(
   );
 
   interface IssueNode {
-    id: string; identifier: string; title: string; description: string | null;
-    dueDate: string | null; url: string; priority: number;
-    state: { name: string; type: string } | null; createdAt: string;
+    id: string;
+    identifier: string;
+    title: string;
+    description: string | null;
+    dueDate: string | null;
+    url: string;
+    priority: number;
+    state: { name: string; type: string } | null;
+    createdAt: string;
     completedAt: string | null;
-    assignee: { name: string } | null; team: { id: string } | null;
+    assignee: { name: string } | null;
+    team: { id: string } | null;
   }
 
   const project = data.project as {
@@ -251,14 +254,23 @@ export async function fetchIssues(
         }`,
       );
 
-      interface RelNode { type: string; relatedIssue: { identifier: string } }
-      interface ChildNode { id: string; completedAt: string | null }
+      interface RelNode {
+        type: string;
+        relatedIssue: { identifier: string };
+      }
+      interface ChildNode {
+        id: string;
+        completedAt: string | null;
+      }
 
-      const issues = detailData.issues as { nodes: Array<{
-        id: string; identifier: string;
-        relations?: { nodes: RelNode[] };
-        children?: { nodes: ChildNode[] };
-      }> };
+      const issues = detailData.issues as {
+        nodes: Array<{
+          id: string;
+          identifier: string;
+          relations?: { nodes: RelNode[] };
+          children?: { nodes: ChildNode[] };
+        }>;
+      };
 
       for (const node of issues.nodes) {
         const identifier = node.identifier;
@@ -324,13 +336,11 @@ export async function fetchIssues(
       return bTime - aTime; // newest completed first
     });
 
-  const milestones: Milestone[] = (project.projectMilestones?.nodes || []).map(
-    (m) => ({
-      id: m.id,
-      name: m.name,
-      targetDate: m.targetDate,
-    }),
-  );
+  const milestones: Milestone[] = (project.projectMilestones?.nodes || []).map((m) => ({
+    id: m.id,
+    name: m.name,
+    targetDate: m.targetDate,
+  }));
 
   return { projectName: project.name, tasks, doneTasks, milestones };
 }
@@ -353,10 +363,7 @@ export async function updateIssueDueDate(apiKey: string, issueId: string, dueDat
 export async function updateIssueStartDate(apiKey: string, issueId: string, startDate: string): Promise<void> {
   await debouncedApiCall(`start-${issueId}`, async () => {
     // Fetch current description
-    const data = await gql(
-      apiKey,
-      `query { issue(id: "${issueId}") { description } }`,
-    );
+    const data = await gql(apiKey, `query { issue(id: "${issueId}") { description } }`);
     const issue = data.issue as { description: string | null };
     const currentDesc: string = issue?.description || '';
 
@@ -374,10 +381,7 @@ export async function updateIssueStartDate(apiKey: string, issueId: string, star
       newDesc = currentDesc.trim() ? `${currentDesc.trim()}\n${newTag}` : newTag;
     }
 
-    const escaped = newDesc
-      .replace(/\\/g, '\\\\')
-      .replace(/"/g, '\\"')
-      .replace(/\n/g, '\\n');
+    const escaped = newDesc.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
 
     await gql(
       apiKey,
