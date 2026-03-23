@@ -1,11 +1,10 @@
-import { toPng } from 'html-to-image';
-import { jsPDF } from 'jspdf';
-
 /**
  * Temporarily removes overflow clipping so the full scrollable
  * content is captured, then restores original styles.
  */
 async function captureAsDataUrl(element: HTMLElement): Promise<string> {
+  const { toPng } = await import('html-to-image');
+
   const origOverflow = element.style.overflow;
   const origOverflowX = element.style.overflowX;
   const origWidth = element.style.width;
@@ -44,6 +43,7 @@ export async function exportAsPng(element: HTMLElement): Promise<void> {
 }
 
 export async function exportAsPdf(element: HTMLElement): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const dataUrl = await captureAsDataUrl(element);
 
   // Load image to get dimensions
