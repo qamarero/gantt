@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Theme } from '../hooks/useTheme';
+import { toastError, toastSuccess } from './Toast';
 import { exportAsPng, exportAsPdf } from '../utils/export';
 import ThemeToggle from './ThemeToggle';
 
@@ -28,9 +29,15 @@ export default function Toolbar({ loading, lastSynced, onRefresh, onDisconnectLi
     setExporting(true);
     try {
       const el = document.getElementById('gantt-export-target');
-      if (!el) return;
+      if (!el) {
+        toastError('Nothing to export — load a project first.');
+        return;
+      }
       if (format === 'png') await exportAsPng(el);
       else await exportAsPdf(el);
+      toastSuccess(`Exported as ${format.toUpperCase()}`);
+    } catch (e) {
+      toastError(`Export failed: ${(e as Error).message}`);
     } finally {
       setExporting(false);
     }
