@@ -10,4 +10,23 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    target: 'es2023',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'react';
+          }
+          if (id.includes('node_modules/react-router')) {
+            return 'router';
+          }
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase';
+          }
+        },
+      },
+    },
+  },
 });
