@@ -105,20 +105,22 @@ export default function GanttRow({
   // Bar position
   let barLeft: number;
   let barWidth: number;
-  let overdueWidth = 0;
-
   if (hasStartDate && taskStartDate) {
     const startDay = daysBetween(chartStart, taskStartDate);
-    const endDay = daysBetween(chartStart, dueDate);
-    barLeft = startDay * dayWidth;
-    barWidth = Math.max((endDay - startDay) * dayWidth, dayWidth);
     if (overdue) {
-      overdueWidth = Math.abs(daysLeft) * dayWidth;
+      // Single unified bar from startDate → today
+      const todayDay = daysBetween(chartStart, today);
+      barLeft = startDay * dayWidth;
+      barWidth = Math.max((todayDay - startDay) * dayWidth, dayWidth);
+    } else {
+      const endDay = daysBetween(chartStart, dueDate);
+      barLeft = startDay * dayWidth;
+      barWidth = Math.max((endDay - startDay) * dayWidth, dayWidth);
     }
   } else if (overdue) {
     const barEndDay = daysBetween(chartStart, dueDate);
     barLeft = barEndDay * dayWidth;
-    barWidth = Math.abs(daysLeft) * dayWidth;
+    barWidth = Math.max(Math.abs(daysLeft) * dayWidth, dayWidth);
   } else {
     const barStartDay = daysBetween(chartStart, today);
     const barEndDay = daysBetween(chartStart, dueDate);
@@ -172,8 +174,11 @@ export default function GanttRow({
   } else if (task.totalChildren > 0) {
     barLabel = `${task.completedChildren}/${task.totalChildren}`;
   } else {
-    barLabel = overdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d`;
+    barLabel = overdue ? `${Math.abs(daysLeft)}d late` : `${daysLeft}d`;
   }
+
+  // When bar is too narrow for text, show label outside
+  const barIsNarrow = displayBarWidth < dayWidth * 1.8;
 
   function formatDateStr(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -451,7 +456,7 @@ export default function GanttRow({
               color: overdue ? '#f85149' : daysLeft <= 14 ? '#ffa657' : undefined,
             }}
           >
-            {overdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft} days left`}
+            {overdue ? `${Math.abs(daysLeft)}d late` : `${daysLeft} days left`}
           </span>
         </div>
       </td>
@@ -475,19 +480,19 @@ export default function GanttRow({
 
           {/* Main bar */}
           <div
-            className={`gantt-bar absolute h-[26px] rounded-md top-[3px] flex items-center justify-end pr-2 text-[10px] font-semibold text-white/70 z-[2] min-w-[20px] transition-[filter,transform] duration-150 hover:brightness-120 hover:scale-y-110 ${isDone ? 'bar-done' : overdue && !hasStartDate ? 'bar-overdue animate-pulse-bar' : `bar-${pCls}`} ${isAnyDrag ? '!transition-none !transform-none opacity-80' : ''} ${onReschedule || onRescheduleStart ? (isMoving ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-pointer'}`}
+            className={`gantt-bar absolute h-[26px] rounded-md top-[3px] flex items-center ${barIsNarrow ? 'justify-center' : 'justify-end pr-2'} text-[10px] font-semibold text-white/70 z-[2] min-w-[20px] transition-[filter,transform] duration-150 hover:brightness-120 hover:scale-y-110 ${isDone ? 'bar-done' : overdue ? 'bar-overdue animate-pulse-bar' : `bar-${pCls}`} ${isAnyDrag ? '!transition-none !transform-none opacity-80' : ''} ${onReschedule || onRescheduleStart ? (isMoving ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-pointer'}`}
             style={{
               left: displayBarLeft,
               width: displayBarWidth,
               background: isDone
                 ? 'linear-gradient(135deg, #1a7f37, #2ea043)'
-                : overdue && !hasStartDate
+                : overdue
                   ? 'linear-gradient(135deg, #da3633, #f85149)'
                   : barGradients[pCls],
               boxShadow: isDone
                 ? '0 2px 8px rgba(35,134,54,0.3)'
-                : overdue && !hasStartDate
-                  ? '0 2px 12px rgba(248,81,73,0.5)'
+                : overdue
+                  ? '0 2px 12px rgba(248,81,73,0.4)'
                   : barShadows[pCls],
               overflow: 'hidden',
             }}
@@ -510,7 +515,8 @@ export default function GanttRow({
                 style={{ width: progressWidth }}
               />
             )}
-            <span className="relative z-[1]">{barLabel}</span>
+            {/* Label inside bar only when there's enough room */}
+            {!barIsNarrow && <span className="relative z-[1] whitespace-nowrap">{barLabel}</span>}
 
             {onReschedule && (
               <div
@@ -521,19 +527,20 @@ export default function GanttRow({
             )}
           </div>
 
-          {/* Overdue extension */}
-          {hasStartDate && overdue && overdueWidth > 0 && (
-            <div
-              className="absolute h-[26px] rounded-r-md top-[3px] animate-pulse-bar z-[2]"
+          {/* Floating label for narrow bars — positioned to the right of the bar */}
+          {barIsNarrow && !isAnyDrag && (
+            <span
+              className="absolute top-[6px] z-[3] text-[10px] font-semibold whitespace-nowrap pointer-events-none"
               style={{
-                left: barLeft + barWidth,
-                width: overdueWidth,
-                background: 'linear-gradient(135deg, #da3633, #f85149)',
-                boxShadow: '0 2px 12px rgba(248,81,73,0.5)',
-                opacity: 0.7,
+                left: displayBarLeft + displayBarWidth + 6,
+                color: overdue ? '#f85149' : 'var(--color-text-muted)',
               }}
-            />
+            >
+              {barLabel}
+            </span>
           )}
+
+          {/* Overdue marker — subtle due date indicator within the unified bar */}
         </div>
       </td>
     </tr>
