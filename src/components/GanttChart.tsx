@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { GroupBy, Milestone, Task } from '@/types';
 import { Avatar } from '@/utils/avatar';
+import { daysBetween, isWeekend } from '@/utils/date';
 import DependencyArrows from './DependencyArrows';
 import GanttRow from './GanttRow';
 
@@ -25,15 +26,6 @@ export interface ColumnWidths {
 
 const DEFAULT_WIDTHS: ColumnWidths = { task: 360, priority: 90, due: 110 };
 const MIN_WIDTHS: ColumnWidths = { task: 200, priority: 60, due: 80 };
-
-function isWeekend(date: Date): boolean {
-  const d = date.getDay();
-  return d === 0 || d === 6;
-}
-
-function daysBetween(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / 86400000);
-}
 
 function groupTasks(tasks: Task[], groupBy: GroupBy): { key: string; label: string; tasks: Task[] }[] {
   if (groupBy === 'none') return [{ key: '__all', label: '', tasks }];

@@ -1,16 +1,10 @@
 import React from 'react';
 import type { Task } from '@/types';
+import { priorityColors } from '@/utils/colors';
 
 interface Props {
   tasks: Task[];
 }
-
-const priorityColors: Record<string, string> = {
-  Urgent: '#f85149',
-  High: '#ffa657',
-  Medium: '#d2992a',
-  Low: '#8b949e',
-};
 
 // Small SVG icons for each stat
 function FlameIcon() {

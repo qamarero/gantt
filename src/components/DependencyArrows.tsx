@@ -1,4 +1,5 @@
 import type { Task } from '@/types';
+import { daysBetween } from '@/utils/date';
 
 interface Props {
   tasks: Task[];
@@ -7,10 +8,6 @@ interface Props {
   dayWidth: number;
   totalDays: number;
   fixedColsWidth: number;
-}
-
-function daysBetween(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
 const ROW_HEIGHT = 58; // approximate row height in pixels

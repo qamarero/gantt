@@ -1,39 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Task } from '@/types';
 import { Avatar } from '@/utils/avatar';
-
-function stripMarkdown(md: string): string {
-  return md
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/\*(.+?)\*/g, '$1')
-    .replace(/#+\s*/g, '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/^[-*]\s+/gm, '\u2022 ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-function formatDateShort(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-const priorityColors: Record<string, string> = {
-  Urgent: '#f85149',
-  High: '#ffa657',
-  Medium: '#d2992a',
-  Low: '#8b949e',
-  None: '#484f58',
-};
-
-const statusDotColors: Record<string, string> = {
-  started: '#58a6ff',
-  unstarted: '#484f58',
-  completed: '#238636',
-  canceled: '#8b949e',
-  triage: '#d2992a',
-  backlog: '#484f58',
-};
+import { priorityColors, statusDotColors } from '@/utils/colors';
+import { formatDateShort } from '@/utils/date';
+import { stripMarkdown } from '@/utils/markdown';
 
 // Global state management
 let globalOpenPanel: ((task: Task) => void) | null = null;

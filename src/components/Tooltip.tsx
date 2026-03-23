@@ -1,17 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Task } from '@/types';
 import { Avatar } from '@/utils/avatar';
-
-function stripMarkdown(md: string): string {
-  return md
-    .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/\*(.+?)\*/g, '$1')
-    .replace(/#+\s*/g, '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/^[-*]\s+/gm, '\u2022 ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
+import { priorityColors, statusDotColors } from '@/utils/colors';
+import { formatDate } from '@/utils/date';
+import { stripMarkdown } from '@/utils/markdown';
 
 interface TooltipState {
   task: Task | null;
@@ -27,28 +19,6 @@ export function showTooltip(task: Task, x: number, y: number) {
 export function hideTooltip() {
   globalTooltipSetter?.({ task: null, x: 0, y: 0 });
 }
-
-function formatDateShort(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-const priorityColors: Record<string, string> = {
-  Urgent: '#f85149',
-  High: '#ffa657',
-  Medium: '#d2992a',
-  Low: '#8b949e',
-  None: '#484f58',
-};
-
-const statusDotColors: Record<string, string> = {
-  started: '#58a6ff',
-  unstarted: '#484f58',
-  completed: '#238636',
-  canceled: '#8b949e',
-  triage: '#d2992a',
-  backlog: '#484f58',
-};
 
 export default function Tooltip() {
   const [state, setState] = useState<TooltipState>({ task: null, x: 0, y: 0 });
@@ -149,8 +119,8 @@ export default function Tooltip() {
         <div>
           <div className="text-text-muted text-[10px] mb-0.5">Due</div>
           <div className="text-[11px] font-medium text-text-secondary tabular-nums">
-            {task.startDate && <span className="text-text-muted">{formatDateShort(task.startDate)} → </span>}
-            {formatDateShort(task.due)}
+            {task.startDate && <span className="text-text-muted">{formatDate(task.startDate)} → </span>}
+            {formatDate(task.due)}
             <span className="ml-1" style={{ color: overdue ? '#f85149' : daysLeft <= 14 ? '#ffa657' : undefined }}>
               ({overdue ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`})
             </span>

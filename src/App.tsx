@@ -13,11 +13,7 @@ import DetailPanel from '@/components/DetailPanel';
 import { useAuth } from '@/hooks/useAuth';
 import { useLinearData } from '@/hooks/useLinearData';
 import { useTheme } from '@/hooks/useTheme';
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+import { formatDate } from '@/utils/date';
 
 function GanttView({
   linearToken,

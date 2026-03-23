@@ -7,11 +7,7 @@ import StatsRow from '@/components/StatsRow';
 import Tooltip from '@/components/Tooltip';
 import { useSharedData } from '@/hooks/useSharedData';
 import { useTheme } from '@/hooks/useTheme';
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+import { formatDate } from '@/utils/date';
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
