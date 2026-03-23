@@ -4,13 +4,17 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import './index.css'
 import App from './App'
 import Callback from './pages/Callback'
+import Landing from './pages/Landing'
+import NotFound from './pages/NotFound'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/app" element={<App />} />
         <Route path="/callback" element={<Callback />} />
-        <Route path="*" element={<App />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

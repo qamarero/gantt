@@ -109,6 +109,13 @@ html.light .bar-overdue { background: linear-gradient(135deg, #a40e26, #cf222e) 
 /* Light theme - semi-transparent adjustments */
 html.light .gantt-bar { color: rgba(255,255,255,0.9); }
 
+/* Focus-visible for keyboard accessibility */
+tr:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
 /* Toast slide-in animation */
 @keyframes slide-in {
   from { transform: translateX(100%); opacity: 0; }

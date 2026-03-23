@@ -347,7 +347,33 @@ export default function GanttRow({ task, chartStart, totalDays, today, dayWidth,
   const statusDotColor = statusDotColors[task.statusType] || '#484f58';
 
   return (
-    <tr className="transition-colors duration-150 hover:bg-accent/[0.03] border-l-2 border-l-transparent hover:border-l-accent">
+    <tr
+      className="transition-colors duration-150 hover:bg-accent/[0.03] border-l-2 border-l-transparent hover:border-l-accent focus-within:bg-accent/[0.04] focus-within:border-l-accent"
+      tabIndex={0}
+      role="row"
+      aria-label={`${task.id}: ${task.title}, ${task.priority} priority, due ${formatDate(task.due)}, ${task.status}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          window.open(task.url, '_blank');
+        }
+        if (e.key === 's' && onCycleStatus) {
+          e.preventDefault();
+          onCycleStatus(task.uuid);
+        }
+        // Arrow key navigation between rows
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const next = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement;
+          next?.focus();
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prev = (e.currentTarget as HTMLElement).previousElementSibling as HTMLElement;
+          prev?.focus();
+        }
+      }}
+    >
       {/* Task info */}
       <td className="py-3 px-4 border-b border-border-primary align-middle overflow-hidden" style={{ width: colWidths.task, minWidth: 200, maxWidth: colWidths.task }}>
         <div className="flex items-start gap-2.5">
