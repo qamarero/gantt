@@ -116,7 +116,7 @@ export default function GanttRow({
     } else {
       const endDay = daysBetween(chartStart, dueDate);
       barLeft = startDay * dayWidth;
-      barWidth = Math.max((endDay - startDay) * dayWidth, dayWidth);
+      barWidth = Math.max((endDay - startDay + 1) * dayWidth, dayWidth);
     }
   } else if (overdue) {
     const barEndDay = daysBetween(chartStart, dueDate);
@@ -126,7 +126,7 @@ export default function GanttRow({
     const barStartDay = daysBetween(chartStart, today);
     const barEndDay = daysBetween(chartStart, dueDate);
     barLeft = barStartDay * dayWidth;
-    barWidth = Math.max((barEndDay - barStartDay) * dayWidth, dayWidth);
+    barWidth = Math.max((barEndDay - barStartDay + 1) * dayWidth, dayWidth);
   }
 
   // Apply due date drag (extends/shrinks right edge), start drag (moves left edge), or whole-bar move
