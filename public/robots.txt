@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /callback
+Disallow: /share/
+
+Sitemap: https://ganttsmart.com/sitemap.xml
